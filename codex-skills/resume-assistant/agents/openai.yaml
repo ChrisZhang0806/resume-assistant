@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resume Assistant"
+  short_description: "Tailor resumes from verified job evidence"
+  default_prompt: "Use $resume-assistant to set up my resume workspace, build the master fact base from my resume or work history, help me choose the default or custom template path, then tailor resumes with verified facts, export PDF, and optionally draft a cover letter."

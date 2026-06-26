@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# OS and editor files
+.DS_Store
+**/.DS_Store
+.idea/
+.vscode/
+
+# Local environment and caches
+.env
+.env.*
+.resume-assistant-doctor.json
+**/.resume-assistant-doctor.json
+.cache/
+.vite/
+.npm-cache/
+
+# Private Resume Assistant workspace data
+/continue-resume-workspace/
+/local-project-files/
+/master-data/
+/master-resume.md
+/application-log.md
+/target-resumes/
+/tmp/
+/index.html
+/styles.css
+/cover-letter-template.html
+/agents.md
+/Skills.md
+/workflow_redesign.md
+
+# Local app/runtime sources from a private workspace
+/src/
+/server/
+/public/
+/scripts/
+/package.json
+/package-lock.json
+
+# Generated artifacts
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.log
+!starter-workspace/docs/
+!starter-workspace/docs/workflow-overview-image2.png
+!starter-workspace/docs/base-resume-template.png
+
+# Keep the public package files
+!/codex-skills/
+!/starter-workspace/
+!/README.md
+!/LICENSE
+!/.gitignore

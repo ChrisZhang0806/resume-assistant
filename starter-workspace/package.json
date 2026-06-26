@@ -1,0 +1,22 @@
+{
+  "name": "resume-assistant-starter-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A starter workspace for an AI-assisted resume tailoring workflow.",
+  "scripts": {
+    "doctor": "node scripts/doctor.mjs",
+    "serve": "python3 -m http.server 8000",
+    "import-job": "node scripts/import-job.mjs",
+    "compare": "node scripts/generate-compare-preview.mjs",
+    "cover-letter": "node scripts/generate-cover-letter-html.mjs",
+    "export-pdf": "node scripts/export-resume-pdf.mjs",
+    "verify-layout": "node scripts/verify-layout.mjs",
+    "check:scripts": "node --check scripts/import-job.mjs && node --check scripts/generate-compare-preview.mjs && node --check scripts/generate-cover-letter-html.mjs && node --check scripts/export-resume-pdf.mjs && node --check scripts/verify-layout.mjs && node --check scripts/doctor.mjs"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "^0.0.8",
+    "canvas": "^3.2.3",
+    "cheerio": "^1.2.0"
+  }
+}
