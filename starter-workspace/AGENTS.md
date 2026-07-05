@@ -417,9 +417,11 @@ Before writing, read:
 - The most relevant project or experience module
 - The confirmed target resume
 
-Write in English, usually 250-300 words unless the user asks for a shorter version. Treat the cover letter as a job-match note, not a second resume: open with a concrete job-role match, use one strongest project or experience as the main proof point, add one differentiating background point only if it strengthens the match, and point the reviewer to a specific portfolio case study or discussion topic when relevant.
+Write in English. By default, every cover letter must use exactly three short body paragraphs and about 220-300 body words unless the user or application form explicitly requires a different format. Use 150-220 words for application text boxes, email-style notes, optional low-priority cover notes, or very low-priority roles. Use 300-350 words only for strong-match roles or postings that explicitly ask for a more detailed letter, and do not exceed 350 words unless the employer gives a longer required format. Use simple, easy-to-understand language, keep the tone sincere and restrained, avoid exaggeration, and clearly explain how the candidate's skills can create value for the company. Treat the cover letter as a job-match note, not a second resume: open with a concrete job-role match, use one strongest project or experience as the main proof point, add one differentiating background point only if it strengthens the match, and close within the third paragraph with company value or a specific portfolio discussion point.
 
-Use 2-3 verified matching points total. Natural job keywords are useful, but do not keyword-stuff. Avoid template phrases such as `perfect fit`, `uniquely qualified`, `passionate professional`, `I am excited to leverage my skills`, and generic company praise.
+Use 2-3 verified matching points total. Natural job keywords are useful, but do not keyword-stuff or mirror the job posting so closely that the letter reads like keyword-spun boilerplate. Avoid template phrases such as `perfect fit`, `uniquely qualified`, `passionate professional`, `I am excited to leverage my skills`, and generic company praise. Because many applicants now use AI-generated cover letters, treat the final draft as a human-edited proof-of-thinking note: include concrete project context, design judgment, portfolio direction, or career-transition explanation that another applicant could not copy from the job ad.
+
+Before presenting the Markdown draft, count the body words, confirm the draft has exactly three body paragraphs, confirm the selected length mode is appropriate, and revise if any requirement fails.
 
 File flow:
 

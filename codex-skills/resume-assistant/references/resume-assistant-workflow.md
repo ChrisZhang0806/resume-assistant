@@ -415,12 +415,19 @@ Before writing, read:
 
 Writing rules:
 
-- English, usually 250-300 words.
-- Natural, specific, and restrained.
+- English, exactly three short body paragraphs by default.
+- Default length: about 220-300 body words.
+- Short mode: 150-220 words for application text boxes, email-style notes, optional low-priority cover notes, or very low-priority roles.
+- Detailed mode: 300-350 words only for strong-match roles or postings that explicitly ask for a more detailed letter. Do not exceed 350 words unless the employer gives a longer required format.
+- Natural, specific, sincere, and restrained.
+- Treat the letter as a job-match note, not a second resume: open with a concrete role match, use one strongest project or experience as the main proof point, add one differentiating background point only if it strengthens the match, and close within the third paragraph with company value or a specific portfolio discussion point.
 - Build around 2-3 true matching points.
-- Avoid phrases such as `I am thrilled`, `perfect fit`, `uniquely qualified`, and `passionate professional`.
+- Avoid phrases such as `I am thrilled`, `perfect fit`, `uniquely qualified`, `passionate professional`, and `I am excited to leverage my skills`.
+- Do not keyword-stuff or mirror the job posting so closely that the letter reads like keyword-spun boilerplate.
+- Because many applicants now use AI-generated cover letters, treat the final draft as a human-edited proof-of-thinking note: include concrete project context, design judgment, portfolio direction, or career-transition explanation that another applicant could not copy from the job ad.
 - Do not invent company research, personal connections, outcome metrics, tool experience, identity status, or application channels.
 - Leave layout room when role names, company names, or contact details are long.
+- Before presenting the Markdown draft, count the body words, confirm exactly three body paragraphs, confirm the selected length mode is appropriate, and revise if any requirement fails.
 
 File flow:
 
@@ -513,7 +520,8 @@ Avoid:
 ### Cover Letter
 
 - English by default.
-- Usually 250-300 words.
+- Exactly three short body paragraphs by default.
+- Usually 220-300 body words; use 150-220 words for short text boxes or low-priority notes and 300-350 words only for strong-match or employer-requested detailed letters.
 - Sound like a real applicant: natural, restrained, and specific.
 - Do not repeat the full resume. Add motivation and 2-3 strongest proof points.
 

@@ -169,7 +169,7 @@ When a job requires a cover letter or the user requests one:
 
 1. Read `templates/cover-letter-writing-guidelines.md`.
 2. Draft a Markdown file in the same application folder, using `templates/cover-letter-draft-template.md` as a guide.
-3. Keep the letter as a job-match note: one page, 3-5 short paragraphs, one strongest project or experience, natural job keywords, and a specific portfolio case-study handoff.
+3. Keep the letter as a job-match note: one page, exactly three short body paragraphs by default, usually 220-300 body words, one strongest project or experience, natural job keywords, and a specific portfolio case-study handoff.
 4. Ask the user to confirm the Markdown draft.
 5. Generate printable HTML:
 
