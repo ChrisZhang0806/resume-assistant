@@ -140,22 +140,33 @@ Custom templates should still follow the workspace flow: copy `base/index.html` 
 ## Typical Workflow
 
 ```bash
-npm run import-job -- "https://example.com/jobs/product-designer"
+npm run import-job -- "https://example.com/jobs/product-designer" --browser-text "/tmp/job-visible.txt"
+npm run check-ats -- "applications/yyyy-mm-dd-company-role/resume.html"
 npm run verify-layout -- "applications/yyyy-mm-dd-company-role/resume.html" -v
 npm run export-pdf -- "applications/yyyy-mm-dd-company-role/resume.html"
 ```
 
-For job URLs, prefer opening the page in the browser, copying the visible job detail text, and importing with the original URL plus `--browser-text`:
+For job URLs, opening the page in the Codex in-app browser is required. Copy/save the visible job-detail text and import with the original URL plus `--browser-text`:
 
 ```bash
 npm run import-job -- "https://www.linkedin.com/jobs/view/123" --browser-text "/tmp/job-visible.txt"
 ```
 
-Use URL-only import only as a fallback, then review `job-analysis.md` for missing content, navigation, login text, recommendations, alerts, or other page noise before analysis.
+URL-only import is disabled. `scripts/import-job.mjs` rejects HTTP/HTTPS job URLs unless `--browser-text` is provided. If the browser view is incomplete or unavailable, ask the user to paste the visible job description and save that text before importing.
 
 Generated resumes should be created under `applications/{date-company-role}/`. Do not edit `base/index.html` or `base/styles.css` directly for a job application; copy both files into the application folder first and edit only those application-local copies.
 
+After writing a target resume, run the mandatory ATS keyword coverage check:
+
+```bash
+npm run check-ats -- "applications/yyyy-mm-dd-company-role/resume.html"
+```
+
+The check reads the application folder's `job-analysis.md`, verifies that reviewed `### Must Use` keywords are present in the resume, writes `ats-keyword-check.md`, and fails when Must Use coverage is incomplete. If it fails, rewrite the Summary, project/experience bullets, or Skills based on the keyword placement plan, then rerun the check. Missing Should Use keywords are warnings; unsupported keywords should stay in `job-analysis.md` as risks, not be forced into the resume.
+
 `npm run verify-layout` checks both vertical fit and layout policy issues such as contact-row overflow, unsafe inline styles, illegal gap values, side-padding changes, and print clipping CSS. For custom templates, pass `--custom-template` so the verifier does not enforce the starter template's fixed padding and gap policy.
+
+If layout compression changes keyword-bearing text, rerun both `npm run check-ats` and `npm run verify-layout` before exporting. `npm run export-pdf` also reruns the ATS keyword check for application resumes and stops if Must Use coverage is incomplete.
 
 After the target resume HTML is ready, ask the user whether they want a base-vs-target compare preview. Generate it only when requested:
 
@@ -190,6 +201,7 @@ The cover letter must use only facts already supported by `master/master-data/`,
 ```bash
 npm run doctor
 npm run check:scripts
+npm run check-ats -- "applications/yyyy-mm-dd-company-role/resume.html"
 npm run verify-layout -- base/index.html -v
 npm run serve
 ```
