@@ -123,29 +123,36 @@ function parseArgs(argv) {
     throw new Error("--browser-text requires the original job URL as the source argument.");
   }
 
+  if (/^https?:\/\//i.test(args.source) && !args.browserText) {
+    throw new Error(
+      "Direct URL fetching is disabled for job imports. Open the job in the Codex in-app browser, save the visible job-detail text, then rerun with --browser-text FILE.",
+    );
+  }
+
   return args;
 }
 
 function printHelp() {
   console.log(`Usage:
-  node scripts/import-job.mjs <job-url> [options]
+  node scripts/import-job.mjs <job-url> --browser-text <visible-job-text-file> [options]
+  node scripts/import-job.mjs <local-visible-text-or-html-file> [options]
 
 Options:
   --date YYYY-MM-DD       Application/import date. Defaults to today's local date.
   --company "Name"        Override extracted company name.
   --role "Title"          Override extracted job title.
-  --browser-text FILE     Use visible job text copied from the browser for the job body.
+  --browser-text FILE     Required for job URLs. Use visible job text copied from the Codex in-app browser.
   --out-root DIR          Output root. Defaults to applications.
   --force                 Overwrite an existing job-analysis.md.
   --help                  Show this help.
 
 Examples:
-  node scripts/import-job.mjs https://boards.greenhouse.io/example/jobs/123
   node scripts/import-job.mjs https://www.linkedin.com/jobs/view/123 --browser-text /tmp/job-visible.txt
-  node scripts/import-job.mjs ./tmp/job.html --company "Acme" --role "Product Designer"
+  node scripts/import-job.mjs ./tmp/job-visible.txt --company "Acme" --role "Product Designer"
 
-For job URLs, prefer --browser-text with text copied from the visible job detail pane.
-URL-only import is a fallback and must be reviewed for missing or noisy content, especially for LinkedIn, Workday, Job Bank, and other dynamic or anti-scraping sites.
+For job URLs, direct fetching is disabled. Always open the posting in the Codex in-app browser,
+copy/save the visible job-detail text, and import with the original URL plus --browser-text.
+If the browser view is incomplete or unavailable, ask the user to paste the visible posting text.
 `);
 }
 
@@ -166,30 +173,9 @@ async function loadSource(source, args = {}) {
   }
 
   if (/^https?:\/\//i.test(source)) {
-    const response = await fetch(source, {
-      redirect: "follow",
-      headers: {
-        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "accept-language": "en-CA,en-US;q=0.9,en;q=0.8",
-        "user-agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
-      },
-    });
-
-    const html = await response.text();
-
-    if (!response.ok) {
-      throw new Error(
-        `HTTP ${response.status} while fetching ${source}. Saved content was not generated.`,
-      );
-    }
-
-    return {
-      html,
-      finalUrl: response.url || source,
-      sourceType: classifySource(response.url || source),
-      fetchedVia: "fetch",
-    };
+    throw new Error(
+      "Direct URL fetching is disabled for job imports. Use --browser-text with visible text captured from the Codex in-app browser.",
+    );
   }
 
   const filePath = source.startsWith("file://")
@@ -798,11 +784,6 @@ function buildExtractionNotes({ structuredJobs, status, description, sourceType,
 
   if (sourceType === "linkedin") {
     notes.push("LinkedIn pages may be partial, login-gated, or rate-limited. Do not use this script for bulk scraping.");
-    if (fetchedVia !== "in-app-browser") {
-      notes.push("URL-only LinkedIn import was used. Review the extracted description carefully; visible job text copied from the browser is preferred.");
-    }
-  } else if (fetchedVia === "fetch" && sourceType !== "local-file") {
-    notes.push("URL-only import was used. Review the extracted description for missing content or page chrome; visible job text copied from the browser is preferred for dynamic or anti-scraping sites.");
   }
 
   if (description.length >= 20000) {
@@ -912,6 +893,30 @@ TODO: Compare this posting against \`master/master-resume.md\` and mark High / M
 
 TODO: Identify repeated keywords, ATS phrases, keyword priority, and placement strategy.
 
+## ATS Keywords
+
+### Must Use
+
+- TODO: Add reviewed, supported keywords that must appear naturally in the target resume.
+
+### Should Use
+
+${extracted.keywords.length > 0 ? extracted.keywords.map((keyword) => `- ${keyword}`).join("\n") : "- TODO: Add secondary ATS keywords after reviewing the job description."}
+
+### Optional
+
+- TODO: Add low-priority synonyms or secondary tools.
+
+### Unsupported / Do Not Use
+
+- TODO: Add keywords that lack verified evidence and must not be forced into the resume.
+
+## ATS Keyword Placement Plan
+
+| Keyword | Priority | Verified Evidence | Resume Placement | Writing Requirement |
+| --- | --- | --- | --- | --- |
+| TODO | Must Use / Should Use / Optional | TODO | Summary / Project / Experience / Skills | Bullet / skills keyword / omit as unsupported |
+
 ## Localization And Human Voice Analysis
 
 TODO: Check whether the eventual resume wording should emphasize UX research, product design, visual design, AI product, digital media, learning design, technical analysis, or another theme.
@@ -919,6 +924,17 @@ TODO: Check whether the eventual resume wording should emphasize UX research, pr
 ## Writing Strategy For The Resume
 
 TODO: Define the honest resume narrative before drafting the modification plan.
+
+## Post-Write ATS Keyword Check
+
+- Command: \`npm run check-ats -- "${path.join(taskDir, "resume.html")}"\`
+- Report path: \`ats-keyword-check.md\`
+- Must Use coverage: Pending
+- Missing Must Use keywords: Pending
+- Missing Should Use keywords considered: Pending
+- Rewrite required: Pending
+- Rewrite completed and check rerun: Pending
+- Notes on unsupported keywords: Pending
 
 ## Questions Before Modification Plan
 

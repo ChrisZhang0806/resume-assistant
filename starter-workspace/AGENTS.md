@@ -154,13 +154,19 @@ npm run doctor
 Import a job posting:
 
 ```bash
-npm run import-job -- "https://example.com/jobs/product-designer"
+npm run import-job -- "https://example.com/jobs/product-designer" --browser-text "/tmp/job-visible.txt"
 ```
 
 Generate an optional compare preview:
 
 ```bash
 npm run compare -- "applications/yyyy-mm-dd-company-role/resume.html"
+```
+
+Run the mandatory post-write ATS keyword check:
+
+```bash
+npm run check-ats -- "applications/yyyy-mm-dd-company-role/resume.html"
 ```
 
 Generate cover letter HTML from a confirmed Markdown draft:
@@ -231,13 +237,13 @@ The folder should contain:
 
 ### 2. Capture The Job Posting
 
-For every user-provided job URL, prefer reading the visible job page text through the browser, then importing with `--browser-text` when the project script supports it. This protects against anti-scraping controls, dynamic rendering, authentication gates, redirects, and pages that return boilerplate or incomplete HTML to direct fetch:
+For every user-provided job URL, reading the visible job page text through the Codex in-app browser is mandatory. Import the original URL only with `--browser-text`. This protects against anti-scraping controls, dynamic rendering, authentication gates, redirects, and pages that return boilerplate or incomplete HTML to direct fetch:
 
 ```bash
 npm run import-job -- "https://example.com/jobs/product-designer" --browser-text "/tmp/job-visible.txt"
 ```
 
-URL-only fetch is a fallback path, not the preferred workflow for job links. If the current Codex environment does not expose a browser DOM/text extraction tool, ask the user to paste the visible job detail text or provide a copied text file. Save that text and run the importer with `--browser-text` using the original job URL as the source. For LinkedIn, URL-only fetch should be treated as a last-resort debugging path.
+URL-only fetch is not allowed for job links. The importer rejects HTTP/HTTPS job URLs that do not include `--browser-text`. If the current Codex environment does not expose a browser DOM/text extraction tool, ask the user to paste the visible job detail text or provide a copied text file. Save that text and run the importer with `--browser-text` using the original job URL as the source.
 
 Remove unrelated navigation, login prompts, recommended jobs, footers, and ads. If the page cannot be captured completely, ask the user to paste the missing job description before continuing.
 
@@ -283,6 +289,7 @@ Before editing target HTML, write a job analysis that includes:
 - ATS Analysis
 - Keyword Priority
 - Keyword Placement Strategy
+- Post-write ATS keyword check target
 - Layout Budget And Compression Strategy
 - Localization And Human Voice Analysis
 - Writing Strategy
@@ -295,6 +302,13 @@ Use this matrix:
 | --- | --- | --- | --- |
 | Requirement or keyword | Verified evidence from `master/master-data/` | Summary / Project / Experience / Skills | How to express it |
 
+Classify ATS keywords before rewriting:
+
+- `Must Use`: supported, central, and must appear naturally in the resume. Put strong product/method/domain keywords in Summary or project/experience bullets; put tools, platforms, and compact methods in Skills when that is clearer.
+- `Should Use`: useful and supported, but not worth awkward wording or keyword stuffing.
+- `Optional`: low-priority synonyms or secondary tools.
+- `Unsupported / Do Not Use`: missing evidence, risky seniority claims, or tools not confirmed by the user. Do not place these in the resume.
+
 Present the analysis to the user for confirmation. Do not create or modify target HTML before analysis confirmation unless the user explicitly asks to skip confirmation or directly generate.
 
 If the analysis finds a requirement with no evidence in `master/master-data/`, ask the user for the missing experience before finalizing the strategy. When the user provides concrete reusable facts, update the relevant source module and `master/master-data/evidence-map.md` automatically, record the update in `job-analysis.md`, and notify the user that the fact base has been updated.
@@ -306,6 +320,7 @@ After analysis confirmation, prepare a section-level plan:
 - Which sections will change.
 - The goal for each section.
 - Which keywords will be placed where.
+- Which Must Use keywords must appear in Summary or bullets, and which should be placed in Skills.
 - Which content will be kept, compressed, or removed.
 - Whether role title, project title, experience bullets, skill groups, or links will change.
 - Which content cannot be written because it lacks evidence.
@@ -314,6 +329,7 @@ After analysis confirmation, prepare a section-level plan:
 - ATS template risk review, including whether the source design uses icons, columns, tables, image text, charts, or other complex layout patterns and whether the user confirmed the risk.
 - Bullet hierarchy and line budget: which bullets deserve two to three rendered lines, which should fit two lines, and which secondary bullets should be one line.
 - Human voice constraints: how to keep the resume natural, professional, and free of AI-sounding template language.
+- ATS rewrite fallback: where to add a missing Must Use keyword if the post-write keyword check fails.
 
 Present or record this plan, then proceed directly to the target HTML. The user reviews the generated HTML result. Do not wait for a separate plan confirmation unless the user explicitly asks for one.
 
@@ -339,7 +355,34 @@ Rewrite priority:
 
 Certificates must not be merged into Education bullets. If no Certification section is used, place certificates in the most relevant Skills group text.
 
-### 8. Verify Layout
+### 8. Run Post-Write ATS Keyword Check
+
+After writing `resume.html`, run the ATS keyword coverage check before PDF export:
+
+```bash
+npm run check-ats -- "applications/{folder}/resume.html"
+```
+
+The check reads `job-analysis.md`, extracts reviewed `## ATS Keywords` / `### Must Use` terms, scans the resume, and writes `ats-keyword-check.md` in the application folder.
+
+The resume is not final until:
+
+- `job-analysis.md` has reviewed `### Must Use` keywords.
+- Every supported Must Use keyword appears naturally in Summary, Project, Experience, or Skills.
+- Missing Should Use keywords have been considered and either added naturally or left out intentionally.
+- Any unsupported keyword is recorded as a risk instead of being forced into the resume.
+
+If the ATS check fails, rewrite the resume before layout compression or PDF export:
+
+1. For missing product, domain, or method keywords with strong evidence, revise the Summary or the most relevant project/experience bullet.
+2. For missing tool, software, platform, certificate, or compact method keywords, add them to the relevant Skills group.
+3. If a missing Must Use keyword is unsupported, move it out of Must Use, record it under Missing Or Risky Requirements, and do not add it to the resume.
+4. Rerun `npm run check-ats` until Must Use coverage passes.
+5. If later layout compression removes or rewrites keyword-bearing text, rerun this ATS check after compression.
+
+Do not keyword-stuff. A keyword should strengthen a real claim; it should not appear as a disconnected phrase.
+
+### 9. Verify Layout
 
 If the workspace includes a layout verifier, run it after editing. For the default one-page starter template:
 
@@ -373,7 +416,9 @@ If the resume overflows:
 - Do not set `.resume` to `overflow: hidden`, and do not use fixed page height together with `overflow: hidden` in print CSS; those rules clip content instead of proving a fit.
 - Do not change global font size, page target, or fixed section heights to force a fit. If the user wants a different page target, record it and verify against it.
 
-### 9. Offer Optional Compare Preview
+If layout compression changes Summary, bullets, project titles, experience text, or Skills, rerun `npm run check-ats` and `npm run verify-layout` until both checks pass.
+
+### 10. Offer Optional Compare Preview
 
 After `resume.html` has been generated and passes layout verification, ask whether the user wants to review a base-vs-target compare preview, unless the user already gave a compare preference.
 
@@ -387,17 +432,19 @@ Confirm `compare.html` exists and is non-empty, then record its path in `job-ana
 
 If the user does not want a compare preview, do not generate `compare.html`. Record `Compare preview: Not requested` in `job-analysis.md` and continue with PDF export, cover letter decision, and application-log handling. The compare-choice prompt is only about review format; it is not a resume modification confirmation gate.
 
-### 10. Export Resume PDF
+### 11. Export Resume PDF
 
-After layout verification passes, run:
+After ATS keyword coverage and layout verification both pass, run:
 
 ```bash
 npm run export-pdf -- "applications/{folder}/resume.html"
 ```
 
+`npm run export-pdf` automatically reruns the ATS keyword check for application resumes that have `job-analysis.md`. If Must Use coverage fails at this stage, stop, rewrite the resume, rerun the ATS check, rerun layout verification, and then export again.
+
 Confirm the PDF exists and is non-empty. By default, check that the resume PDF is exactly one page. If the user declared a two-page or other explicit page target, the PDF must match that target. If the PDF page count differs from the declared target, treat that as a layout failure even if the HTML verifier passed.
 
-### 11. Decide On Cover Letter
+### 12. Decide On Cover Letter
 
 Do not end immediately after the resume PDF. Decide whether a cover letter is needed:
 
@@ -407,7 +454,7 @@ Do not end immediately after the resume PDF. Decide whether a cover letter is ne
 
 If not needed, record `Cover letter: Not requested / Not required` in `job-analysis.md`.
 
-### 12. Generate Cover Letter
+### 13. Generate Cover Letter
 
 Before writing, read:
 
@@ -431,7 +478,7 @@ File flow:
 6. Check page count, links, contact details, company name, and role title.
 7. Record all paths and validation results in `job-analysis.md`.
 
-### 13. Update Application Log
+### 14. Update Application Log
 
 If the workspace uses `application-log.md`, ask before updating it. Do not mark a job `Submitted` unless the user confirms submission.
 
@@ -455,6 +502,8 @@ Before editing a hashed log:
 - Weakly related experience may keep one bullet.
 - Skills should use compact comma-separated keywords.
 - Use target keywords naturally. Do not keyword-stuff.
+- Must Use ATS keywords must be covered after writing unless they are unsupported and explicitly moved to Missing Or Risky Requirements.
+- Prefer bullets for central product, domain, and method keywords when the evidence is strong; prefer Skills for tools, software, certificates, and compact method terms.
 - The resume's job is credibility; the portfolio's job is storytelling. Do not turn resume bullets into mini case studies.
 - Prefer these concise structures: `Action + Product/Domain + Outcome`, `Problem + Solution`, or `Responsibility + Scale`.
 - Emphasize product/domain, responsibility, scale, and value. Omit routine process detail such as meeting counts, wireframe volume, or step-by-step methods unless the job explicitly needs that proof.
@@ -509,10 +558,12 @@ Final delivery should include:
 - Target CSS path.
 - Compare preview path if generated, or `Not requested`.
 - Resume PDF path.
+- ATS keyword check report path and pass/fail result.
 - Cover letter Markdown, HTML, and PDF paths if generated.
 - `job-analysis.md` path.
 - Application-log update status.
 - Layout verification results.
+- Must Use ATS keyword coverage and any intentional unsupported keywords.
 - PDF page-count result and whether it matches the declared page target.
 - Key rewrite focus.
 - Remaining factual risks or user-confirmation needs.
@@ -524,6 +575,7 @@ Final delivery should include:
 - Template source is image-only or hard to parse: ask for the resume text or Word/PDF source before building the base template.
 - Custom template has ATS risks: explain the risks and ask whether to simplify, preserve, or use the default template.
 - Unsupported job requirement: mark as a risk; do not invent evidence.
+- ATS keyword check failure: rewrite Summary, project/experience bullets, or Skills based on the placement plan, then rerun `npm run check-ats`; unsupported keywords must be moved to Missing Or Risky Requirements instead of forced into the resume.
 - PDF export failure: deliver verified HTML and record the failure.
 - Cover letter longer than the declared page target: shorten the text first.
 - User-edited files: preserve manual changes and do not overwrite them.

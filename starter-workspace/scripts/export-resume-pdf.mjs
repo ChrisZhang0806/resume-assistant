@@ -34,6 +34,8 @@ async function main() {
   const htmlPath = path.resolve(args.htmlPath);
   await assertFile(htmlPath, "HTML input");
 
+  await runAtsKeywordCheckIfNeeded(htmlPath);
+
   // Run automated layout verification
   try {
     const verifyScript = path.resolve("scripts/verify-layout.mjs");
@@ -86,6 +88,52 @@ async function main() {
   console.log(`Created ${path.relative(process.cwd(), outputPath)}`);
 }
 
+async function runAtsKeywordCheckIfNeeded(htmlPath) {
+  const html = await readFile(htmlPath, "utf8");
+  const isResume = /\bclass=["'][^"']*\bresume\b/i.test(html);
+  const isCoverLetter = /\bclass=["'][^"']*\bcover-letter\b/i.test(html);
+
+  if (!isResume || isCoverLetter) {
+    return;
+  }
+
+  const htmlDir = path.dirname(htmlPath);
+  const analysisPath = path.join(htmlDir, "job-analysis.md");
+  const isApplicationResume = htmlPath.split(path.sep).includes("applications");
+
+  if (!(await fileExists(analysisPath))) {
+    if (isApplicationResume) {
+      throw new Error(
+        `job-analysis.md not found beside target resume. ATS keyword check is mandatory before PDF export: ${analysisPath}`,
+      );
+    }
+
+    console.warn("Skipping ATS keyword check because no job-analysis.md was found beside this non-application resume.");
+    return;
+  }
+
+  const { spawnSync } = await import("node:child_process");
+  const checkScript = path.resolve("scripts/check-ats-keywords.mjs");
+  console.log("Running ATS keyword coverage check...");
+  const result = spawnSync("node", [checkScript, htmlPath, "--analysis", analysisPath], {
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
+    throw new Error("ATS keyword check failed. Rewrite the resume and rerun the check before exporting PDF.");
+  }
+}
+
+async function fileExists(filePath) {
+  try {
+    const result = await stat(filePath);
+    return result.isFile();
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
 function parseArgs(argv) {
   const args = {
     htmlPath: "",
@@ -122,6 +170,9 @@ Options:
   --output, -o FILE      PDF output path. Defaults to an upload-friendly name
                          when job-analysis.md is available.
   --help, -h             Show this help.
+
+For application resumes, PDF export automatically runs the ATS keyword coverage
+check against the same folder's job-analysis.md before layout verification and export.
 
 Examples:
   node scripts/export-resume-pdf.mjs applications/2026-06-14-amd-ux-ui-designer/resume.html

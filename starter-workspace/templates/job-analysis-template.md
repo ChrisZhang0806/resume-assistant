@@ -39,6 +39,8 @@ Summarize the core purpose of the role.
 
 - Keyword:
 
+For each Must Use keyword, record placement and evidence in the ATS Keyword Placement Plan table below.
+
 ### Should Use
 
 - Keyword:
@@ -46,6 +48,17 @@ Summarize the core purpose of the role.
 ### Optional
 
 - Keyword:
+
+### Unsupported / Do Not Use
+
+- Keyword:
+- Reason:
+
+## ATS Keyword Placement Plan
+
+| Keyword | Priority | Verified Evidence | Resume Placement | Writing Requirement |
+| --- | --- | --- | --- | --- |
+| Add keyword | Must Use / Should Use / Optional | Add verified evidence | Summary / Project / Experience / Skills | Bullet / skills keyword / omit as unsupported |
 
 ## Requirement Match
 
@@ -68,6 +81,10 @@ Summarize the core purpose of the role.
 - Project focus:
 - Experience focus:
 - Skills focus:
+- ATS keyword strategy:
+- Must Use keywords that need bullet-level coverage:
+- Must Use keywords that can live in Skills:
+- Unsupported keywords to avoid:
 - Resume style principle: credibility summary, not portfolio case study
 - Bullet line budget: central evidence 2-3 rendered lines; ordinary bullets 2 lines; weak or secondary bullets 1 line
 - Preferred bullet structures: Action + Product/Domain + Outcome; Problem + Solution; Responsibility + Scale
@@ -96,6 +113,17 @@ Summarize the core purpose of the role.
 - Print clipping CSS avoided: yes / no
 - Horizontal overflow check passed: yes / no
 
+## Post-Write ATS Keyword Check
+
+- Command: `npm run check-ats -- "applications/{folder}/resume.html"`
+- Report path: `ats-keyword-check.md`
+- Must Use coverage:
+- Missing Must Use keywords:
+- Missing Should Use keywords considered:
+- Rewrite required: yes / no
+- Rewrite completed and check rerun: yes / no
+- Notes on unsupported keywords:
+
 ## User Confirmation
 
 - Analysis confirmed by user:
@@ -114,3 +142,5 @@ Summarize the core purpose of the role.
 - Cover letter HTML: `cover-letter.html`
 - Cover letter PDF:
 - Verification notes:
+- ATS keyword check report:
+- ATS keyword check result:
