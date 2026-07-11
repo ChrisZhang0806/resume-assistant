@@ -70,12 +70,17 @@ async function main() {
 
   let result;
   if (isResume) {
-    result = verifyResume($, args.verbose);
+    result = verifyResume($, args.verbose, cssSources);
   } else {
     result = verifyCoverLetter($, args.verbose);
   }
 
-  const policyIssues = isResume ? collectResumePolicyIssues($, cssSources, args) : [];
+  const policyIssues = isResume
+    ? [
+        ...collectResumePolicyIssues($, cssSources, args),
+        ...collectBulletLineIssues($),
+      ]
+    : [];
   const { totalHeight, details } = result;
   const pageHeightBudget = PAGE_HEIGHT_BUDGET * args.pages;
   const overflow = totalHeight - pageHeightBudget;
@@ -130,16 +135,29 @@ async function loadCssSources($, htmlPath) {
   const htmlDir = path.dirname(htmlPath);
 
   $("link[rel~='stylesheet']").each((_, el) => {
-    const href = $(el).attr("href") || "";
-    if (!href || /^https?:\/\//i.test(href)) return;
+    const rawHref = ($(el).attr("href") || "").trim();
+    if (!rawHref) return;
+    const href = rawHref === "{{STYLES_HREF}}" ? "styles.css" : rawHref;
+
+    if (/^https?:\/\//i.test(href)) {
+      cssSources.push({
+        label: href,
+        path: "",
+        inline: false,
+        remote: true,
+        text: "",
+      });
+      return;
+    }
 
     const hrefWithoutHash = href.split("#")[0].split("?")[0];
     if (!hrefWithoutHash) return;
 
     cssSources.push({
-      label: href,
+      label: rawHref,
       path: path.resolve(htmlDir, hrefWithoutHash),
       inline: false,
+      remote: false,
       text: "",
     });
   });
@@ -149,17 +167,27 @@ async function loadCssSources($, htmlPath) {
       label: `<style> block ${index + 1}`,
       path: "",
       inline: true,
+      remote: false,
       text: $(el).html() || "",
     });
   });
 
   for (const source of cssSources) {
     if (source.inline) continue;
+    if (source.remote) {
+      throw new Error(`Remote stylesheet cannot be measured safely: ${source.label}`);
+    }
     try {
       source.text = await readFile(source.path, "utf8");
-    } catch {
-      source.text = "";
+    } catch (error) {
+      throw new Error(`Stylesheet could not be read: ${source.label} (${error.message})`);
     }
+  }
+
+  if (cssSources.length === 0) {
+    throw new Error(
+      "No stylesheet was found. Layout verification requires a readable local stylesheet or inline CSS.",
+    );
   }
 
   return cssSources;
@@ -313,6 +341,30 @@ function getTextWidth(text, fontSize, weight = "normal") {
   return MEASURE_CONTEXT.measureText(normalizedText).width;
 }
 
+function collectBulletLineIssues($) {
+  const issues = [];
+  const listWidth = RESUME_CONTENT_WIDTH - 15;
+
+  $(".resume-body > section.section").each((sectionIndex, sectionElement) => {
+    const section = $(sectionElement);
+    const sectionName =
+      normalizeText(section.find("> h2").first().text()) || `Section ${sectionIndex + 1}`;
+
+    section.find("> .entry > ul > li").each((bulletIndex, bulletElement) => {
+      const text = normalizeText($(bulletElement).text());
+      const height = getTextHeight(text, listWidth, 10, 14, "normal");
+      const lineCount = Math.max(1, Math.ceil((height - 0.01) / 14));
+      if (lineCount > 3) {
+        issues.push(
+          `${sectionName} bullet ${bulletIndex + 1} renders as ${lineCount} lines; the maximum is 3. Shorten or split the evidence before delivery.`,
+        );
+      }
+    });
+  });
+
+  return issues;
+}
+
 function collectResumePolicyIssues($, cssSources, args) {
   const issues = [];
 
@@ -417,6 +469,25 @@ function getContactRowMeasurementStyle(cssSources) {
   }
 
   return style;
+}
+
+function getExactSelectorPx(cssSources, selector, property, fallback) {
+  let result = fallback;
+
+  for (const { text } of cssSources) {
+    for (const rule of findCssRules(text)) {
+      const matchesSelector = rule.selector
+        .split(",")
+        .map((part) => part.trim())
+        .some((part) => part === selector);
+      if (!matchesSelector) continue;
+
+      const parsed = parsePxLength(getDeclaration(rule.declarations, property));
+      if (parsed !== null) result = parsed;
+    }
+  }
+
+  return result;
 }
 
 function collectCssPolicyIssues(cssSources, templateMode = "default", allowedGaps = ["2px", "4px"]) {
@@ -627,8 +698,13 @@ function escapeRegExp(value) {
 /**
  * Verify Resume Height (.resume)
  */
-function verifyResume($, verbose) {
+function verifyResume($, verbose, cssSources = []) {
   const details = [];
+  const topGap = getExactSelectorPx(cssSources, ".resume", "gap", 8);
+  const bodyGap = getExactSelectorPx(cssSources, ".resume-body", "gap", 8);
+  const defaultSectionGap = getExactSelectorPx(cssSources, ".section", "gap", 2);
+  const entryGap = getExactSelectorPx(cssSources, ".entry", "gap", 2);
+  const skillGroupGap = getExactSelectorPx(cssSources, ".skill-group", "gap", 2);
 
   // 1. Padding
   let currentHeight = RESUME_PADDING_Y * 2;
@@ -637,10 +713,10 @@ function verifyResume($, verbose) {
   // 2. Resume Gap
   // Elements: header.resume-header, section.summary, div.resume-body (if they exist)
   const topElements = $(".resume > header.resume-header, .resume > section.summary, .resume > div.resume-body");
-  const topGaps = Math.max(0, topElements.length - 1) * 8;
+  const topGaps = Math.max(0, topElements.length - 1) * topGap;
   currentHeight += topGaps;
   if (topGaps > 0) {
-    details.push({ name: "Main Flex Gaps (gap: 8px)", height: topGaps });
+    details.push({ name: `Main Flex Gaps (gap: ${topGap}px)`, height: topGaps });
   }
 
   // 3. Header height
@@ -694,11 +770,11 @@ function verifyResume($, verbose) {
   if ($body.length > 0) {
     const $sections = $body.find("> section.section");
 
-    // Body Flex Gaps (gap: 8px)
-    const bodyGaps = Math.max(0, $sections.length - 1) * 8;
+    // Body Flex Gaps
+    const bodyGaps = Math.max(0, $sections.length - 1) * bodyGap;
     currentHeight += bodyGaps;
     if (bodyGaps > 0) {
-      details.push({ name: "Body Section Gaps (gap: 8px)", height: bodyGaps });
+      details.push({ name: `Body Section Gaps (gap: ${bodyGap}px)`, height: bodyGaps });
     }
 
     // Process each section
@@ -707,7 +783,10 @@ function verifyResume($, verbose) {
       const isEdu = $sec.hasClass("section-education");
       const isSkills = $sec.hasClass("section-skills");
       const isCert = $sec.hasClass("section-certification");
-      const secGap = (isEdu || isSkills || isCert) ? 2 : 4; // gap: 2px or 4px
+      let secGap = defaultSectionGap;
+      if (isEdu) secGap = getExactSelectorPx(cssSources, ".section-education", "gap", secGap);
+      if (isSkills) secGap = getExactSelectorPx(cssSources, ".section-skills", "gap", secGap);
+      if (isCert) secGap = getExactSelectorPx(cssSources, ".section-certification", "gap", secGap);
 
       let secHeight = 0;
 
@@ -734,9 +813,9 @@ function verifyResume($, verbose) {
           // Entry structure
           let entryHeight = 0;
 
-          // Gap inside entry: gap: 2px
+          // Gap inside entry, read from the active stylesheet.
           const entryComponents = $child.find("> .entry-heading, > h3, > .entry-meta, > ul");
-          const entryGaps = Math.max(0, entryComponents.length - 1) * 2;
+          const entryGaps = Math.max(0, entryComponents.length - 1) * entryGap;
           entryHeight += entryGaps;
 
           // heading
@@ -784,7 +863,7 @@ function verifyResume($, verbose) {
 
         } else if ($child.hasClass("skill-group")) {
           // Skill Group structure
-          let groupHeight = 2; // gap: 2px
+          let groupHeight = skillGroupGap;
 
           const h3Text = $child.find("h3").text() || "";
           const h3Height = getTextHeight(h3Text, RESUME_CONTENT_WIDTH, 14, 19, 500); // 14px, Chrome normal line-height

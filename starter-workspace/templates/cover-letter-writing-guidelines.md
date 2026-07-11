@@ -1,202 +1,65 @@
 # Cover Letter Writing Guidelines
 
-Use this guide when drafting `cover-letter.md` for a target application. The
-cover letter should work as a job-match note, not as a second resume.
+Use this guide only when a posting requires a cover letter or the user requests one. The letter is a specific job-match note, not a second resume.
 
-## Purpose
+## Default Format
 
-The most useful cover letter helps the hiring team answer three questions
-quickly:
+- One A4 page.
+- Exactly three short body paragraphs.
+- 220–300 body words.
+- Simple, professional, sincere English.
+- A different length or structure only when the user or application explicitly requires it.
 
-- Did the candidate read the role carefully?
-- Does the candidate understand the product, workflow, or business problem behind the role?
-- Which portfolio case study or experience should the reviewer look at first?
+Count body words before presenting the draft. Headers, contact lines, salutation, and signature are not body paragraphs. When an explicit format differs, render with `--paragraphs`, `--min-words`, and `--max-words` so validation matches the recorded decision.
 
-It does not replace the resume or portfolio. Its job is to make the reviewer more
-likely to open the portfolio and understand why one specific project or
-experience is relevant.
+## Contact Contract
 
-## When To Write One
+- Candidate name and a valid email address are required.
+- Location, phone, portfolio, and LinkedIn are optional.
+- Remove an unavailable optional field instead of leaving a placeholder.
+- Any supplied link or phone value must be valid; the renderer outputs only fields that are present.
 
-Write a cover letter when:
+## Minimal Evidence
 
-- The job requires one.
-- The application form recommends or allows one for a role the user cares about.
-- The role is a strong match and the cover letter can clarify the candidate's
-  strongest project, career transition, or portfolio direction.
+Start from the confirmed `job-analysis.md`, target resume, and one primary evidence source. Read only the profile/contact headings and one additional differentiator needed for the letter. Do not load or restate the complete fact base.
 
-For low-match or low-priority roles, use a light adaptation of the draft template
-instead of spending time on a fully custom letter.
+Use two or three verified matching points total:
 
-## Length And Format
+- one or two concrete needs from the posting;
+- one strongest project or experience as primary proof;
+- one differentiating background point only when it improves the match.
 
-- Keep it to one page.
-- Default requirement: use exactly three short body paragraphs and keep the body
-  around 220-300 words unless the user or application form explicitly requires a
-  different format.
-- For application text boxes, email-style notes, optional low-effort cover
-  notes, or very low-priority roles, use a shorter 150-220 word version.
-- For strong-match roles or postings that explicitly ask for a more detailed
-  letter, a draft may reach 300-350 words, but do not exceed 350 words unless
-  the employer gives a longer required format.
-- Use simple, easy-to-understand English and a single-column structure.
-- Use a professional, readable format: 10-12 pt equivalent text, single to 1.15
-  spacing, and enough paragraph spacing to avoid a wall of text.
-- Avoid dense blocks, over-explaining, and repeating the resume.
-- Keep the tone natural, sincere, specific, and restrained.
-- Clearly explain how the candidate's skills can create value for the company.
+Never invent company research, personal connections, tools, credentials, metrics, outcomes, work authorization, identity details, or application channels.
 
-## Content Strategy
-
-Start from the target job, then choose the best verified evidence from
-`master/master-data/`, `job-analysis.md`, and the confirmed target resume.
-
-The cover letter should complement the resume:
-
-- The resume proves qualifications through titles, projects, tools, keywords,
-  and outcomes.
-- The cover letter explains why the most relevant evidence matters for this
-  specific role.
-- The cover letter may clarify career transition, adjacent experience, or
-  portfolio direction when the resume alone could look non-linear.
-- The cover letter should guide the reviewer toward one portfolio case study or
-  one discussion topic, not summarize the full portfolio.
-
-Do:
-
-- Name the role and company.
-- Mention 1-2 concrete job requirements from the posting.
-- Use one most relevant project or experience as the main proof point.
-- Explain why that project or experience matters for this role.
-- Add one differentiating background point only if it strengthens the match.
-- Point the reviewer to a specific portfolio case study when relevant.
-
-Do not:
-
-- Repeat resume bullets in paragraph form.
-- Claim tools, metrics, companies, domains, or outcomes that are not in the
-  verified fact base.
-- Overpraise the company with generic compliments.
-- Use generic AI-sounding lines such as "I am excited to leverage my skills" or
-  "I am passionate about innovative solutions."
-- Use phrases such as "perfect fit," "uniquely qualified," "dynamic,"
-  "self-starter," or "detail-oriented."
-- Mirror the job posting so closely that the letter reads like keyword-spun
-  boilerplate.
-
-## Recommended Structure
+## Three-Paragraph Structure
 
 ### Paragraph 1: Role Match
 
-State the application role and connect it to a concrete job need, such as
-workflow design, user research, SaaS onboarding, AI product work, accessibility,
-prototyping, enterprise systems, learning experience design, analytics,
-operations, or stakeholder collaboration.
+Name the role and company, then connect one central job need to verified evidence. Open with substance rather than generic enthusiasm.
 
-Good pattern:
+### Paragraph 2: Primary Evidence
 
-```text
-I am applying for the [Role] role at [Company] because the posting emphasizes [specific job need], which connects closely with my experience [matching verified evidence].
-```
+Use one project or experience. Explain the problem or context, the candidate's method or responsibility, and the resulting value. Do not summarize several projects or repeat resume bullets verbatim.
 
-### Paragraph 2: One Strong Project Or Experience
+### Paragraph 3: Differentiator, Value, And Close
 
-Choose one project or experience, then use a problem - method - value structure.
-Possible evidence routes include:
+Add one relevant differentiator only if useful, then explain the value the candidate could bring. When appropriate, point the reviewer to one specific portfolio case study or discussion topic.
 
-- Product, UX, or service design project.
-- AI-assisted, automation, workflow, or tooling project.
-- Learning, onboarding, training, or content experience.
-- Enterprise, internal tools, operations, or complex systems work.
-- Research, analysis, stakeholder communication, or technical collaboration.
-- Visual, media, content, or brand work when the target role is mainly visual or
-  content-focused.
+## Voice And Keyword Use
 
-### Paragraph 3: Differentiating Background, Company Value, And Close
+Use a few supported priority terms naturally. Do not mirror the posting or keyword-stuff. Avoid generic claims such as `perfect fit`, `uniquely qualified`, `passionate professional`, or `I am excited to leverage my skills`.
 
-Use this only when it adds value. Possible differentiators include:
-
-- complex systems understanding
-- requirements analysis
-- stakeholder communication
-- technical and non-technical translation
-- risk-aware decision support
-- information structure
-- cross-functional delivery
-
-End this same paragraph by explaining the practical value the candidate can
-bring to the company or by pointing to a specific portfolio discussion topic.
-
-Good pattern:
-
-```text
-I would be glad to help [Company] [practical value], and I can walk you through [case study] to show how I approach [specific workflow, research, prototype, or design-system element].
-```
-
-## Keyword Use
-
-Pick 3-5 priority keywords from the job posting and use them naturally. Good
-candidates include:
-
-- user research
-- workflow analysis
-- information architecture
-- interaction design
-- prototyping
-- design systems
-- accessibility
-- SaaS
-- Agile
-- AI-assisted product design
-- onboarding
-- technical collaboration
-
-Do not keyword-stuff. If a keyword is unsupported, either omit it or frame it as
-transferable evidence in the same way the target resume does.
-
-## Portfolio Handoff
-
-For UX, product, visual, content, or digital experience roles, the cover letter
-should guide the reviewer toward the strongest portfolio evidence:
-
-- Mention the exact case study when possible.
-- Tell the reviewer what to look for in that case study.
-- Keep process detail short; the portfolio can carry the full story.
-
-## AI Use
-
-AI tools may help identify job keywords, check English phrasing, or shorten a
-draft. The final letter must still sound like the applicant and be grounded in
-verified projects, work history, and the job posting.
-
-Because many applicants now use AI-generated cover letters, treat the final
-draft as a human-edited proof-of-thinking note. Add concrete project context,
-design judgment, portfolio direction, or career-transition explanation that
-could not be copied from the job ad by another applicant. Do not submit a
-generic AI first draft.
-
-## Optional Video Cover Letter
-
-Do not use video cover letters by default. Consider one only for high-value roles
-where storytelling, media, creative technology, or product communication is
-central, and only if the video can be kept natural and concise, usually 60-90
-seconds.
+The final draft should sound human-edited and specific. Useful detail comes from verified project context, judgment, career direction, or a targeted portfolio handoff—not from generic company praise.
 
 ## Quality Gate
 
-Before presenting a cover letter draft, check that it:
+Before presenting `cover-letter.md`, verify:
 
-- Fits the requested length and one-page target.
-- Uses exactly three body paragraphs unless the user or application form
-  explicitly overrides this rule.
-- Uses the right length mode: 220-300 body words by default, 150-220 for short
-  text boxes or low-priority notes, and 300-350 only for strong-match or
-  employer-requested detailed letters.
-- Opens with a job-specific match, not generic enthusiasm.
-- Uses one main project or experience as evidence.
-- Explains why the evidence matters for the target role.
-- Explains how the candidate's skills can create value for the company.
-- Uses only verified facts.
-- Points to a specific portfolio case study or discussion topic when relevant.
-- Avoids generic AI-sounding phrasing.
-- Does not repeat the resume.
+- 220–300 body words and exactly three body paragraphs, unless an explicit override is recorded;
+- correct candidate, company, role, and required email;
+- optional contact fields are either valid or removed;
+- only verified evidence and supported keywords;
+- one primary proof point and a clear company-value connection;
+- no resume repetition, keyword-spun boilerplate, or generic AI phrasing.
+
+After the user confirms the Markdown draft, render HTML, verify layout, export PDF, and check the actual page count. Do not render before that confirmation unless the gate was explicitly waived.
