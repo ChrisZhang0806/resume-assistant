@@ -3,6 +3,7 @@
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 const require = createRequire(import.meta.url);
@@ -55,12 +56,14 @@ async function main() {
 
   const packageJson = await loadPackageJson();
 
+  checkNodeVersion(packageJson);
   await checkRequiredStructure();
   await checkRecommendedDocs();
-  showTemplateSetupGuidance();
+  if (isFirstRun()) showTemplateSetupGuidance();
   await checkPackageScripts(packageJson);
   const dependenciesReady = checkDependencies(packageJson);
   await checkPrivacyDefaults();
+  await checkApplicationLogIntegrity();
   await checkStarterPlaceholders();
   await checkAtsTemplateRisk();
   await checkApplicationsFolder();
@@ -74,7 +77,7 @@ async function main() {
   }
 
   await checkChrome();
-  await writeDoctorState();
+  if (state.failures === 0) await writeDoctorState();
   finish();
 }
 
@@ -106,22 +109,13 @@ Delete ${DOCTOR_STATE_FILE} to run first-run checks again.
 
 async function detectDoctorContext() {
   const markerExists = await fileExists(path.join(workspaceRoot, DOCTOR_STATE_FILE));
-  if (markerExists) {
-    return {
-      firstRun: false,
-      markerExists,
-      recommendedDocCount: 0,
-      applicationOutputCount: 0,
-    };
-  }
-
   const [recommendedDocCount, applicationOutputs] = await Promise.all([
     countExistingRecommendedDocs(),
     listApplicationOutputs({ missingAsEmpty: true }),
   ]);
 
   return {
-    firstRun: recommendedDocCount > 0 || applicationOutputs.length === 0,
+    firstRun: !markerExists && (recommendedDocCount > 0 || applicationOutputs.length === 0),
     markerExists,
     recommendedDocCount,
     applicationOutputCount: applicationOutputs.length,
@@ -163,6 +157,29 @@ async function loadPackageJson() {
   }
 }
 
+function checkNodeVersion(packageJson) {
+  section("Node Runtime");
+  const requirement = String(packageJson.engines?.node || "").trim();
+  const match = requirement.match(/^>=(\d+)\.(\d+)\.(\d+)$/);
+  if (!match) {
+    fail("package.json engines.node must declare a simple >=major.minor.patch minimum.");
+    return;
+  }
+
+  const required = match.slice(1).map(Number);
+  const current = process.versions.node.split(".").slice(0, 3).map(Number);
+  const compatible = current.some((value, index) => {
+    if (value === required[index]) return false;
+    return value > required[index] && current.slice(0, index).every((part, partIndex) => part === required[partIndex]);
+  }) || current.every((value, index) => value === required[index]);
+
+  if (compatible) {
+    pass(`Node ${process.versions.node} satisfies ${requirement}.`);
+  } else {
+    fail(`Node ${process.versions.node} does not satisfy ${requirement}.`);
+  }
+}
+
 async function checkRequiredStructure() {
   section("Required Files");
 
@@ -184,11 +201,18 @@ async function checkRequiredStructure() {
     ["templates/job-analysis-template.md", "file"],
     ["templates/cover-letter-draft-template.md", "file"],
     ["scripts/import-job.mjs", "file"],
+    ["scripts/check-ats-keywords.mjs", "file"],
     ["scripts/generate-compare-preview.mjs", "file"],
     ["scripts/generate-cover-letter-html.mjs", "file"],
     ["scripts/export-resume-pdf.mjs", "file"],
     ["scripts/verify-layout.mjs", "file"],
+    ["scripts/serve.mjs", "file"],
     ["scripts/doctor.mjs", "file"],
+    ["workflows/setup.md", "file"],
+    ["workflows/import-analysis.md", "file"],
+    ["workflows/resume-finalize.md", "file"],
+    ["workflows/cover-letter.md", "file"],
+    ["workflows/application-log.md", "file"],
   ];
 
   for (const [relativePath, expectedType] of requiredPaths) {
@@ -256,11 +280,14 @@ async function checkPackageScripts(packageJson) {
     "doctor",
     "check:scripts",
     "import-job",
+    "check-ats",
     "verify-layout",
     "compare",
     "cover-letter",
     "export-pdf",
     "serve",
+    "test",
+    "audit",
   ];
 
   for (const scriptName of requiredScripts) {
@@ -269,6 +296,11 @@ async function checkPackageScripts(packageJson) {
     } else {
       fail(`Missing package script: ${scriptName}`);
     }
+  }
+
+  const serveCommand = scripts.serve || "";
+  if (serveCommand && !/scripts\/serve\.mjs/.test(serveCommand)) {
+    warn("npm run serve does not use the bundled localhost-only preview server.");
   }
 }
 
@@ -318,8 +350,41 @@ async function checkPrivacyDefaults() {
 
   checkGitignorePattern(gitignore, "node_modules/");
   checkGitignorePattern(gitignore, "applications/*");
+  checkGitignorePattern(gitignore, "tmp/");
+  checkGitignorePattern(gitignore, "reports/");
+  checkGitignorePattern(gitignore, ".private-rules.md");
   checkGitignorePattern(gitignore, "*.log");
   checkGitignorePattern(gitignore, ".DS_Store");
+}
+
+async function checkApplicationLogIntegrity() {
+  section("Application Log Integrity");
+  const logPath = path.join(workspaceRoot, "application-log.md");
+  let content = "";
+  try {
+    content = await readFile(logPath, "utf8");
+  } catch {
+    warn("application-log.md could not be read; skipping hash verification.");
+    return;
+  }
+
+  const storedHash = content.match(/<!--\s*agent-log-hash:\s*([a-f0-9]{64})\s*-->/i)?.[1] || "";
+  if (!storedHash) {
+    info("application-log.md has no agent-log-hash; manual edits will be preserved.");
+    return;
+  }
+
+  const normalized = content.replace(/^.*agent-log-hash:.*(?:\r?\n)?/im, "");
+  const actualHash = createHash("sha256").update(normalized).digest("hex");
+  if (actualHash === storedHash) {
+    pass("application-log.md hash matches its stored value.");
+  } else {
+    warn("application-log.md hash does not match. Preserve manual edits and refresh the hash only during an authorized log update.");
+  }
+
+  if (/^\|[^\n]+\|\r?\n\s*\r?\n(?=\|\s*\d+\s*\|)/m.test(content)) {
+    warn("application-log.md contains a blank line inside its data rows; repair it during an authorized log update.");
+  }
 }
 
 async function checkStarterPlaceholders() {
@@ -491,11 +556,13 @@ async function checkApplicationsFolder() {
     if (realOutputs.length === 0) {
       pass("applications/ is clean except for starter metadata.");
     } else {
-      const message = `applications/ already contains output folders or files: ${realOutputs.join(", ")}`;
+      const preview = realOutputs.slice(0, 5).join(", ");
+      const suffix = realOutputs.length > 5 ? `, and ${realOutputs.length - 5} more` : "";
+      const message = `applications/ contains ${realOutputs.length} output folder(s) or file(s): ${preview}${suffix}`;
       if (isFirstRun()) {
         fail(`${message}. First-run workspaces should not include generated application outputs.`);
       } else {
-        warn(message);
+        info(`${message}. This is expected in a live workspace and is not scanned by default.`);
       }
     }
   } catch {
@@ -537,10 +604,12 @@ function checkScriptSyntax() {
 
   const scripts = [
     "scripts/import-job.mjs",
+    "scripts/check-ats-keywords.mjs",
     "scripts/generate-compare-preview.mjs",
     "scripts/generate-cover-letter-html.mjs",
     "scripts/export-resume-pdf.mjs",
     "scripts/verify-layout.mjs",
+    "scripts/serve.mjs",
     "scripts/doctor.mjs",
   ];
 

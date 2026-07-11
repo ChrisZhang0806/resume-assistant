@@ -25,7 +25,8 @@ copying the workspace into a private folder.
 
 ## Loading Guidance
 
-- Read `profile.md` and `evidence-map.md` before tailoring a resume.
-- Load only the detailed modules needed for the target role.
+- Start here, then search relevant headings and aliases in `profile.md`, `skills.md`, and `evidence-map.md`; read only matching sections plus enough context to verify the claim.
+- Load one or two detailed modules needed for the target role. Expand only for a distinct high-priority evidence gap.
+- Do not load the complete evidence map, career story, or long detail module by default.
 - Use only verified facts from these files or user-confirmed additions.
 - If evidence is missing, mark it as a gap instead of inventing it.

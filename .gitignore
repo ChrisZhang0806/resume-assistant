@@ -17,6 +17,11 @@ node_modules/
 .vite/
 .npm-cache/
 
+# Private workspace-only instructions and generated research
+starter-workspace/.private-rules.md
+starter-workspace/tmp/
+starter-workspace/reports/
+
 # Private Resume Assistant workspace data
 /continue-resume-workspace/
 /local-project-files/

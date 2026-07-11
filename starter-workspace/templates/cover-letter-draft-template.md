@@ -1,23 +1,23 @@
-# Your Name
+# Candidate Name
 
-City, Region
+City, Region (optional)
 
-professional-email@example.com | phone number
+professional-email@example.com | phone number (optional)
 
-portfolio.example | linkedin.com/in/your-profile
+portfolio.example (optional) | linkedin.com/in/profile (optional)
 
 Dear Hiring Team,
 
-Drafting notes: remove these instructional sentences before presenting the final Markdown draft.
+Drafting note: remove all instructional text and replace every placeholder before presenting this file.
 
-Use `templates/cover-letter-writing-guidelines.md` before drafting. The letter should be a job-match note, not a second resume. Default to exactly three body paragraphs and about 220-300 body words; use 150-220 words only for short text boxes, optional low-priority notes, or email-style cover notes. Keep it simple, sincere, specific, human-edited, and grounded in verified facts.
+Use `templates/cover-letter-writing-guidelines.md`. Default to one A4 page, exactly three short body paragraphs, and 220–300 body words unless the user or application explicitly requires another format.
 
-I am writing to apply for the Role Title role at Company Name. Use this opening paragraph to connect one concrete job need to the candidate's strongest relevant evidence. Mention the role's actual focus, such as workflow design, user research, prototyping, design systems, AI product work, accessibility, SaaS onboarding, enterprise systems, or learning experience design.
+Paragraph 1: apply for the [Role] position at [Company] and connect one central job need to the candidate's strongest verified match.
 
-Use this paragraph for one main project or experience. Write it as problem, method, and value. Do not summarize three projects. Choose the evidence that best matches the target role, such as a product project, service workflow, learning experience, technical collaboration, operations improvement, research effort, or content/design system example.
+Paragraph 2: use one primary project or experience. Explain its problem or context, the candidate's method or responsibility, and the value relevant to this role. Do not summarize several projects or repeat resume bullets.
 
-Use this third paragraph for one differentiating background point if it strengthens the match, such as complex systems analysis, stakeholder communication, technical-to-non-technical translation, AI-assisted product work, accessibility-aware QA, or onboarding. Close within this same paragraph by explaining how the candidate can create value for the company or by guiding the reviewer to a specific portfolio case study. Avoid generic phrases such as "perfect fit," "uniquely qualified," "passionate professional," and "I am excited to leverage my skills."
+Paragraph 3: add one differentiating background point only when useful, then close with practical company value or a specific portfolio or discussion handoff. Avoid generic enthusiasm and unsupported claims.
 
 Sincerely,
 
-Your Name
+Candidate Name

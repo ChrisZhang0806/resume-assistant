@@ -4,16 +4,21 @@
   "private": true,
   "type": "module",
   "description": "A starter workspace for an AI-assisted resume tailoring workflow.",
+  "engines": {
+    "node": ">=20.18.1"
+  },
   "scripts": {
     "doctor": "node scripts/doctor.mjs",
-    "serve": "python3 -m http.server 8000",
+    "serve": "node scripts/serve.mjs",
     "import-job": "node scripts/import-job.mjs",
     "compare": "node scripts/generate-compare-preview.mjs",
     "cover-letter": "node scripts/generate-cover-letter-html.mjs",
     "export-pdf": "node scripts/export-resume-pdf.mjs",
     "check-ats": "node scripts/check-ats-keywords.mjs",
     "verify-layout": "node scripts/verify-layout.mjs",
-    "check:scripts": "node --check scripts/import-job.mjs && node --check scripts/check-ats-keywords.mjs && node --check scripts/generate-compare-preview.mjs && node --check scripts/generate-cover-letter-html.mjs && node --check scripts/export-resume-pdf.mjs && node --check scripts/verify-layout.mjs && node --check scripts/doctor.mjs"
+    "test": "node --test test/*.test.mjs",
+    "audit": "npm run check:scripts && npm test && npm run doctor",
+    "check:scripts": "node --check scripts/import-job.mjs && node --check scripts/check-ats-keywords.mjs && node --check scripts/generate-compare-preview.mjs && node --check scripts/generate-cover-letter-html.mjs && node --check scripts/export-resume-pdf.mjs && node --check scripts/verify-layout.mjs && node --check scripts/serve.mjs && node --check scripts/doctor.mjs"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.8",

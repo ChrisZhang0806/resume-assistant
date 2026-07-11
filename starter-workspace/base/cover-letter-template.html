@@ -1,63 +1,37 @@
-<!DOCTYPE html><html lang="en"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cover Letter Template</title>
-    <link rel="stylesheet" href="styles.css">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{DOCUMENT_TITLE}}</title>
+    <link rel="stylesheet" href="{{STYLES_HREF}}" />
   </head>
   <body>
     <main class="letter-shell" aria-label="Cover letter preview">
       <article class="cover-letter">
         <header class="cover-letter-header">
           <section class="cover-contact" aria-label="Contact information">
-            <h1>Your Name</h1>
-            <p>
-              <a href="mailto:hi@youremail.com">hi@youremail.com</a><br>
-              <a href="https://myportfolio.com">myportfolio.com</a><br>
-              <a href="https://www.linkedin.com/in/your-name/">linkedin.com/in/your-name</a><br>
-              +00 01234567890<br>
-              Location
-            </p>
+            <h1>{{NAME}}</h1>
+            <p>{{CONTACT_LINES}}</p>
           </section>
         </header>
 
         <section class="cover-letter-body">
           <h2>
-            Application for the position of <span>[Role]</span> at
-            <span>[Company Name]</span>
+            Application for the position of <span>{{ROLE}}</span> at
+            <span>{{COMPANY}}</span>
           </h2>
 
-          <p>
-            My name is <span>[Your Name]</span>, and I am writing to apply for
-            the <span>[Role]</span> role at <span>[Company Name]</span>. I am
-            interested in this position because it connects closely with my
-            product design experience and the kind of problems I enjoy working
-            through.
-          </p>
+          <p>{{SALUTATION}}</p>
 
-          <ul>
-            <li>
-              Use this paragraph to connect one strong project or work example
-              to the company's product context.
-            </li>
-            <li>
-              Use this paragraph to show a second piece of evidence, such as
-              technical collaboration, user research, workflow analysis, or QA.
-            </li>
-            <li>
-              Use this paragraph to explain what you would bring to the team in
-              a direct and human way.
-            </li>
-          </ul>
-
-          <p>
-            Thank you for considering my application. I would be glad to discuss
-            how my background could support <span>[Company Name]</span>.
-          </p>
+          {{BODY_PARAGRAPHS}}
 
           <div class="cover-signoff">
-            <p>Best,</p>
-            <p><span>[Your Name]</span></p>
+            <p>{{SIGNOFF}}</p>
+            <p>{{NAME}}</p>
           </div>
-      </section></article>
+        </section>
+      </article>
     </main>
-</body></html>
+  </body>
+</html>

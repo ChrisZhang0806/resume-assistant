@@ -1,11 +1,23 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OUT_ROOT = "applications";
+const WORKFLOW_VERSION = 2;
+const JOB_ANALYSIS_TEMPLATE = path.join(ROOT, "templates/job-analysis-template.md");
+const ARTIFACT_NAMES = ["job-posting.txt", "job-analysis.md", "workflow-state.json"];
 
 main().catch((error) => {
   console.error(`Import failed: ${error.message}`);
@@ -34,27 +46,58 @@ async function main() {
   const taskSlug = `${applicationDate}-${companySlug}-${roleSlug}`;
   const taskDir = path.resolve(ROOT, args.outRoot || DEFAULT_OUT_ROOT, taskSlug);
   const analysisPath = path.join(taskDir, "job-analysis.md");
+  const sourcePath = path.join(taskDir, "job-posting.txt");
+  const statePath = path.join(taskDir, "workflow-state.json");
 
-  if (!args.force && (await fileExists(analysisPath))) {
+  const existingOutput = await firstExistingPath([analysisPath, sourcePath, statePath]);
+  if (!args.force && existingOutput) {
     throw new Error(
-      `job-analysis.md already exists at ${analysisPath}. Re-run with --force to overwrite.`,
+      `${path.basename(existingOutput)} already exists at ${existingOutput}. Re-run with --force to replace this v2 import.`,
     );
   }
 
-  await mkdir(taskDir, { recursive: true });
-  await writeFile(
-    analysisPath,
-    renderJobAnalysis({
+  // Complete every source/template read, render, and validation before touching
+  // the destination folder. This keeps template failures side-effect free,
+  // including when --force targets an existing application.
+  const sourceText = `${extracted.sourceDescription || extracted.description || ""}`.trim();
+  const sourceContent = sourceText ? `${sourceText}\n` : "";
+  const sourceSha256 = sha256(sourceContent);
+  const analysisTemplate = await readFile(JOB_ANALYSIS_TEMPLATE, "utf8");
+  const taskRelativePath = path.relative(ROOT, taskDir);
+  const analysisContent = renderJobAnalysis({
+    template: analysisTemplate,
+    applicationDate,
+    taskDir: taskRelativePath,
+    source: args.source,
+    fetched,
+    extracted,
+    sourceSha256,
+  });
+  const stateContent = `${JSON.stringify(
+    renderWorkflowState({
       applicationDate,
-      taskDir: path.relative(ROOT, taskDir),
+      taskDir: taskRelativePath,
       source: args.source,
-      fetched,
       extracted,
+      sourceSha256,
     }),
-    "utf8",
-  );
+    null,
+    2,
+  )}\n`;
+
+  validateArtifactSet({ sourceContent, analysisContent, stateContent, sourceSha256 });
+
+  await replaceArtifactSet(taskDir, [
+    { name: "job-posting.txt", content: sourceContent },
+    { name: "job-analysis.md", content: analysisContent },
+    // Publish state last so a failed process never advertises newer checks or
+    // outputs before the human-readable source and analysis are in place.
+    { name: "workflow-state.json", content: stateContent },
+  ]);
 
   console.log(`Created ${path.relative(ROOT, analysisPath)}`);
+  console.log(`Created ${path.relative(ROOT, sourcePath)}`);
+  console.log(`Created ${path.relative(ROOT, statePath)}`);
 
   if (extracted.status !== "complete") {
     console.log(
@@ -143,11 +186,11 @@ Options:
   --role "Title"          Override extracted job title.
   --browser-text FILE     Required for job URLs. Use visible job text copied from the Codex in-app browser.
   --out-root DIR          Output root. Defaults to applications.
-  --force                 Overwrite an existing job-analysis.md.
+  --force                 Replace all three v2 import artifacts in an existing folder.
   --help                  Show this help.
 
 Examples:
-  node scripts/import-job.mjs https://www.linkedin.com/jobs/view/123 --browser-text /tmp/job-visible.txt
+  node scripts/import-job.mjs https://www.linkedin.com/jobs/view/123 --browser-text tmp/job-visible.txt
   node scripts/import-job.mjs ./tmp/job-visible.txt --company "Acme" --role "Product Designer"
 
 For job URLs, direct fetching is disabled. Always open the posting in the Codex in-app browser,
@@ -254,10 +297,16 @@ function extractJobPosting(html, finalUrl, overrides = {}) {
   const descriptionFromStructured = structured?.description
     ? htmlToText(String(structured.description))
     : "";
-  const description = chooseDescription(descriptionFromStructured, text, sourceType);
+  const descriptionResult = chooseDescription(descriptionFromStructured, text, sourceType);
+  const description = descriptionResult.text;
   const sections = extractSections(description || text);
   const keywords = inferKeywords(`${title}\n${description}`);
-  const status = computeStatus({ title, company, description });
+  const status = computeStatus({
+    title,
+    company,
+    description,
+    truncated: descriptionResult.truncated,
+  });
 
   return {
     status,
@@ -287,11 +336,13 @@ function extractJobPosting(html, finalUrl, overrides = {}) {
       "",
     sections,
     description,
+    sourceDescription: descriptionResult.fullText,
+    descriptionTruncated: descriptionResult.truncated,
     keywords,
     extractionNotes: buildExtractionNotes({
       structuredJobs,
       status,
-      description,
+      truncated: descriptionResult.truncated,
       sourceType,
       fetchedVia: overrides.fetchedVia,
     }),
@@ -585,13 +636,18 @@ function chooseDescription(structuredDescription, text, sourceType = "generic") 
     ? cleanLinkedInText(structuredDescription || text)
     : structuredDescription || text;
 
-  return description
+  const fullText = description
     .split("\n")
     .filter((line) => !isNavigationNoise(line))
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
-    .trim()
-    .slice(0, 20000);
+    .trim();
+
+  return {
+    fullText,
+    text: fullText.slice(0, 20000),
+    truncated: fullText.length > 20000,
+  };
 }
 
 function isNavigationNoise(line) {
@@ -755,17 +811,20 @@ function inferKeywords(text) {
     "documentation",
   ];
 
-  const haystack = text.toLowerCase();
-  return dictionary.filter((keyword) => haystack.includes(keyword.toLowerCase()));
+  return dictionary.filter((keyword) => {
+    const escaped = escapeRegExp(keyword).replace(/\\ /g, "\\s+");
+    return new RegExp(`(^|[^a-z0-9])${escaped}($|[^a-z0-9])`, "i").test(text);
+  });
 }
 
-function computeStatus({ title, company, description }) {
+function computeStatus({ title, company, description, truncated = false }) {
+  if (truncated) return "partial";
   if (title && company && description.length > 300) return "complete";
   if (title || company || description.length > 200) return "partial";
   return "failed";
 }
 
-function buildExtractionNotes({ structuredJobs, status, description, sourceType, fetchedVia }) {
+function buildExtractionNotes({ structuredJobs, status, truncated, sourceType, fetchedVia }) {
   const notes = [];
 
   if (fetchedVia === "in-app-browser") {
@@ -786,8 +845,10 @@ function buildExtractionNotes({ structuredJobs, status, description, sourceType,
     notes.push("LinkedIn pages may be partial, login-gated, or rate-limited. Do not use this script for bulk scraping.");
   }
 
-  if (description.length >= 20000) {
-    notes.push("Description was truncated at 20,000 characters.");
+  if (truncated) {
+    notes.push(
+      "The analysis excerpt was truncated at 20,000 characters. The complete cleaned source remains in job-posting.txt, and extraction status is partial until reviewed.",
+    );
   }
 
   return notes;
@@ -802,168 +863,132 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function renderJobAnalysis({ applicationDate, taskDir, source, fetched, extracted }) {
-  const location = extracted.location || "Not extracted";
-  const employmentType = extracted.employmentType || "Not extracted";
-  const salary = extracted.salary || "Not extracted";
-  const datePosted = extracted.datePosted || "Not extracted";
-  const validThrough = extracted.validThrough || "Not extracted";
-  const seniority = extracted.seniority || "Not extracted";
-  const jobFunction = extracted.jobFunction || "Not extracted";
-  const industry = extracted.industry || "Not extracted";
-  const workplaceType = extracted.workplaceType || "Not extracted";
-  const sections = renderSections(extracted.sections);
+function renderJobAnalysis({
+  template,
+  applicationDate,
+  taskDir,
+  source,
+  fetched,
+  extracted,
+  sourceSha256,
+}) {
+  const values = {
+    COMPANY: extracted.company || "Not extracted",
+    ROLE: extracted.title || "Not extracted",
+    SOURCE: source,
+    FINAL_URL: fetched.finalUrl,
+    SOURCE_TYPE: extracted.sourceType,
+    FETCHED_VIA: fetched.fetchedVia,
+    APPLICATION_DATE: applicationDate,
+    TASK_DIR: taskDir,
+    SOURCE_SHA256: sourceSha256,
+    EXTRACTION_STATUS: extracted.status,
+    LOCATION: extracted.location || "Not extracted",
+    WORKPLACE_TYPE: extracted.workplaceType || "Not extracted",
+    EMPLOYMENT_TYPE: extracted.employmentType || "Not extracted",
+    SALARY: extracted.salary || "Not extracted",
+    DATE_POSTED: extracted.datePosted || "Not extracted",
+    VALID_THROUGH: extracted.validThrough || "Not extracted",
+    SENIORITY: extracted.seniority || "Not extracted",
+    JOB_FUNCTION: extracted.jobFunction || "Not extracted",
+    INDUSTRY: extracted.industry || "Not extracted",
+    EXTRACTION_NOTES: extracted.extractionNotes.map((note) => `- ${note}`).join("\n"),
+    SUGGESTED_KEYWORDS: extracted.keywords.length > 0
+      ? extracted.keywords.map((keyword) => `- ${keyword}`).join("\n")
+      : "- TODO: Add supported secondary keywords after reviewing job-posting.txt.",
+  };
 
-  return `# Job Analysis - ${extracted.company || "Unknown Company"} ${extracted.title || "Unknown Role"}
-
-## Task Metadata
-
-- Original job link: ${source}
-- Final fetched URL: ${fetched.finalUrl}
-- Source type: ${extracted.sourceType}
-- Fetched via: ${fetched.fetchedVia}
-- Extracted on: ${applicationDate}
-- Application date used for folder naming: ${applicationDate}
-- Task folder: \`${taskDir}/\`
-- Extraction status: ${extracted.status}
-- Analysis status: Not started. This file is an imported job-analysis.md draft only.
-- Target HTML status: Not created. Project workflow requires analysis confirmation and modification-plan confirmation before creating or editing target HTML.
-
-## Job Posting Information
-
-- Company: ${extracted.company || "Not extracted"}
-- Job title: ${extracted.title || "Not extracted"}
-- Location: ${location}
-- Workplace type: ${workplaceType}
-- Employment type: ${employmentType}
-- Salary / pay range: ${salary}
-- Date posted: ${datePosted}
-- Valid through / closing date: ${validThrough}
-- Seniority level: ${seniority}
-- Job function: ${jobFunction}
-- Industry: ${industry}
-
-## Extraction Notes
-
-${extracted.extractionNotes.map((note) => `- ${note}`).join("\n")}
-
-## Full Job Description Extracted From Source
-
-${extracted.description || "No job description text could be extracted. Please paste the full job description here before continuing the resume workflow."}
-
-## Extracted Sections
-
-${sections}
-
-## Requirement Summary
-
-### Must-Have
-
-- TODO: Review the extracted job description and list required qualifications.
-
-### Nice-To-Have
-
-- TODO: Review the extracted job description and list preferred qualifications.
-
-### Keywords
-
-${extracted.keywords.length > 0 ? extracted.keywords.map((keyword) => `- ${keyword}`).join("\n") : "- TODO: Add ATS keywords after reviewing the job description."}
-
-### Evidence Needed
-
-- TODO: Identify what resume evidence is needed to support the role requirements.
-
-## Fit Analysis
-
-### Job Summary
-
-TODO: Summarize the role's core goal, role type, and most important hiring signals.
-
-### Matching Degree
-
-TODO: Compare this posting against \`master/master-resume.md\` and mark High / Medium / Low.
-
-### Requirement Match Matrix
-
-| Job Requirement | Master Resume Evidence | Target Resume Location | Rewrite Strategy |
-| --- | --- | --- | --- |
-| TODO | TODO | TODO | TODO |
-
-## ATS Analysis
-
-TODO: Identify repeated keywords, ATS phrases, keyword priority, and placement strategy.
-
-## ATS Keywords
-
-### Must Use
-
-- TODO: Add reviewed, supported keywords that must appear naturally in the target resume.
-
-### Should Use
-
-${extracted.keywords.length > 0 ? extracted.keywords.map((keyword) => `- ${keyword}`).join("\n") : "- TODO: Add secondary ATS keywords after reviewing the job description."}
-
-### Optional
-
-- TODO: Add low-priority synonyms or secondary tools.
-
-### Unsupported / Do Not Use
-
-- TODO: Add keywords that lack verified evidence and must not be forced into the resume.
-
-## ATS Keyword Placement Plan
-
-| Keyword | Priority | Verified Evidence | Resume Placement | Writing Requirement |
-| --- | --- | --- | --- | --- |
-| TODO | Must Use / Should Use / Optional | TODO | Summary / Project / Experience / Skills | Bullet / skills keyword / omit as unsupported |
-
-## Localization And Human Voice Analysis
-
-TODO: Check whether the eventual resume wording should emphasize UX research, product design, visual design, AI product, digital media, learning design, technical analysis, or another theme.
-
-## Writing Strategy For The Resume
-
-TODO: Define the honest resume narrative before drafting the modification plan.
-
-## Post-Write ATS Keyword Check
-
-- Command: \`npm run check-ats -- "${path.join(taskDir, "resume.html")}"\`
-- Report path: \`ats-keyword-check.md\`
-- Must Use coverage: Pending
-- Missing Must Use keywords: Pending
-- Missing Should Use keywords considered: Pending
-- Rewrite required: Pending
-- Rewrite completed and check rerun: Pending
-- Notes on unsupported keywords: Pending
-
-## Questions Before Modification Plan
-
-- TODO: Add any missing facts or risk questions that must be confirmed with the user before resume rewriting.
-
-## Confirmation Record
-
-- Job import: Completed on ${applicationDate}.
-- Analysis confirmation: Pending.
-- Modification plan confirmation: Pending.
-- Final target HTML: Not started.
-`;
-}
-
-function renderSections(sections) {
-  const entries = Object.entries(sections);
-  if (entries.length === 0) {
-    return "No clear Responsibilities / Requirements / Preferred sections were extracted automatically.";
+  const rendered = Object.entries(values).reduce(
+    (output, [key, value]) => output.replaceAll(`{{${key}}}`, String(value)),
+    template,
+  );
+  const unresolved = rendered.match(/\{\{[A-Z0-9_]+\}\}/g);
+  if (unresolved) {
+    throw new Error(
+      `Unresolved job-analysis template fields: ${[...new Set(unresolved)].join(", ")}`,
+    );
   }
 
-  return entries
-    .map(([name, lines]) => {
-      const title = name
-        .split("-")
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(" ");
-      return `### ${title}\n\n${lines.map((line) => `- ${line.replace(/^- /, "")}`).join("\n")}`;
-    })
-    .join("\n\n");
+  return rendered;
+}
+
+function renderWorkflowState({ applicationDate, taskDir, source, extracted, sourceSha256 }) {
+  return {
+    workflowVersion: WORKFLOW_VERSION,
+    stage: "imported",
+    updatedAt: new Date().toISOString(),
+    applicationDate,
+    applicationFolder: taskDir,
+    job: {
+      source,
+      company: extracted.company || "",
+      role: extracted.title || "",
+      extractionStatus: extracted.status,
+    },
+    source: {
+      path: "job-posting.txt",
+      sha256: sourceSha256,
+    },
+    decisions: {
+      analysisConfirmed: false,
+      analysisConfirmation: "pending",
+      separatePlanConfirmationRequested: false,
+      compare: "ask",
+      coverLetter: "ask",
+      applicationLog: "ask",
+    },
+    template: {
+      resumeMode: "default",
+      resumePages: 1,
+      coverLetterMode: "default",
+      coverLetterPages: 1,
+      allowedGaps: ["2px", "4px"],
+    },
+    checks: {
+      ats: "pending",
+      layout: "pending",
+      pdf: "pending",
+      pdfPages: null,
+    },
+    outputs: {
+      jobPosting: "job-posting.txt",
+      jobAnalysis: "job-analysis.md",
+      workflowState: "workflow-state.json",
+    },
+  };
+}
+
+function validateArtifactSet({ sourceContent, analysisContent, stateContent, sourceSha256 }) {
+  if (sha256(sourceContent) !== sourceSha256) {
+    throw new Error("job-posting.txt SHA-256 validation failed before write.");
+  }
+
+  if (!analysisContent.includes("<!-- workflow-version: 2 -->")) {
+    throw new Error("job-analysis template is missing the workflow-version: 2 marker.");
+  }
+
+  let state;
+  try {
+    state = JSON.parse(stateContent);
+  } catch (error) {
+    throw new Error(`workflow-state.json render is invalid JSON: ${error.message}`);
+  }
+
+  if (state.workflowVersion !== WORKFLOW_VERSION || state.stage !== "imported") {
+    throw new Error("workflow-state.json must start at workflowVersion 2 / imported.");
+  }
+  if (state.source?.path !== "job-posting.txt" || state.source?.sha256 !== sourceSha256) {
+    throw new Error("workflow-state.json source metadata does not match job-posting.txt.");
+  }
+
+  const outputNames = Object.values(state.outputs || {}).sort();
+  if (JSON.stringify(outputNames) !== JSON.stringify([...ARTIFACT_NAMES].sort())) {
+    throw new Error("workflow-state.json outputs must reference the three v2 control artifacts.");
+  }
+}
+
+function sha256(content) {
+  return createHash("sha256").update(content).digest("hex");
 }
 
 function slugify(value) {
@@ -1010,11 +1035,148 @@ function escapeRegExp(value) {
 }
 
 async function fileExists(filePath) {
+  return Boolean(await pathStats(filePath));
+}
+
+async function firstExistingPath(filePaths) {
+  for (const filePath of filePaths) {
+    if (await fileExists(filePath)) return filePath;
+  }
+  return "";
+}
+
+async function replaceArtifactSet(taskDir, artifacts) {
+  const names = artifacts.map(({ name }) => name);
+  if (
+    new Set(names).size !== ARTIFACT_NAMES.length ||
+    JSON.stringify(names) !== JSON.stringify(ARTIFACT_NAMES)
+  ) {
+    throw new Error(
+      "Import transaction must contain the three v2 control artifacts in source, analysis, state order.",
+    );
+  }
+
+  const parentDir = path.dirname(taskDir);
+  await mkdir(parentDir, { recursive: true });
+  const taskStats = await pathStats(taskDir);
+
+  if (!taskStats) {
+    await publishNewArtifactDirectory(parentDir, taskDir, artifacts);
+    return;
+  }
+
+  if (!taskStats.isDirectory() || taskStats.isSymbolicLink()) {
+    throw new Error(`Application path is not a real directory: ${taskDir}`);
+  }
+
+  // Reject unexpected artifact types before staging or replacing anything.
+  for (const { name } of artifacts) {
+    const targetPath = path.join(taskDir, name);
+    const stats = await pathStats(targetPath);
+    if (stats && !stats.isFile()) {
+      throw new Error(`Refusing to replace non-file import artifact: ${targetPath}`);
+    }
+  }
+
+  const stagingDir = await mkdtemp(
+    path.join(parentDir, `.${path.basename(taskDir)}.import-`),
+  );
+  let preserveStaging = false;
+
   try {
-    await readFile(filePath, "utf8");
-    return true;
-  } catch {
-    return false;
+    await writeStagedArtifacts(stagingDir, artifacts);
+    await commitArtifactReplacements(taskDir, stagingDir, artifacts);
+  } catch (error) {
+    preserveStaging = error.preserveStaging === true;
+    throw error;
+  } finally {
+    if (!preserveStaging) {
+      await rm(stagingDir, { recursive: true, force: true });
+    }
+  }
+}
+
+async function publishNewArtifactDirectory(parentDir, taskDir, artifacts) {
+  const stagingDir = await mkdtemp(
+    path.join(parentDir, `.${path.basename(taskDir)}.import-`),
+  );
+
+  try {
+    await writeStagedArtifacts(stagingDir, artifacts);
+    // Publishing the prepared directory is a single same-filesystem rename, so
+    // a new application never exposes only part of the v2 artifact set.
+    await rename(stagingDir, taskDir);
+  } finally {
+    await rm(stagingDir, { recursive: true, force: true });
+  }
+}
+
+async function writeStagedArtifacts(stagingDir, artifacts) {
+  for (const { name, content } of artifacts) {
+    const stagedPath = path.join(stagingDir, name);
+    await writeFile(stagedPath, content, { encoding: "utf8", flag: "wx" });
+    const stagedContent = await readFile(stagedPath, "utf8");
+    if (stagedContent !== content) {
+      throw new Error(`Staged artifact verification failed: ${name}`);
+    }
+  }
+}
+
+async function commitArtifactReplacements(taskDir, stagingDir, artifacts) {
+  const installed = new Set();
+  const backups = new Map();
+
+  try {
+    // Artifacts arrive in source → analysis → state order. State is committed
+    // last so it cannot advertise a newer import before its source exists.
+    for (const { name } of artifacts) {
+      const targetPath = path.join(taskDir, name);
+      const backupPath = path.join(stagingDir, `.backup-${name}`);
+      if (await fileExists(targetPath)) {
+        await rename(targetPath, backupPath);
+        backups.set(targetPath, backupPath);
+      }
+
+      await rename(path.join(stagingDir, name), targetPath);
+      installed.add(targetPath);
+    }
+  } catch (error) {
+    const rollbackErrors = [];
+
+    for (const { name } of [...artifacts].reverse()) {
+      const targetPath = path.join(taskDir, name);
+      const backupPath = backups.get(targetPath);
+
+      try {
+        if (installed.has(targetPath)) {
+          await rm(targetPath, { force: true });
+        }
+        if (backupPath) {
+          await rename(backupPath, targetPath);
+        }
+      } catch (rollbackError) {
+        rollbackErrors.push(`${name}: ${rollbackError.message}`);
+      }
+    }
+
+    if (rollbackErrors.length > 0) {
+      const rollbackFailure = new Error(
+        `Artifact replacement failed (${error.message}); rollback also failed (${rollbackErrors.join("; ")}). Recovery files were retained at ${stagingDir}.`,
+        { cause: error },
+      );
+      rollbackFailure.preserveStaging = true;
+      throw rollbackFailure;
+    }
+    throw error;
+  }
+}
+
+async function pathStats(filePath) {
+  try {
+    return await lstat(filePath);
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
   }
 }
 

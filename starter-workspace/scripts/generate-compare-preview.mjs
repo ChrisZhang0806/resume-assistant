@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import {
+  mkdir,
+  readFile,
+  realpath,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SECTION_ORDER = [
   "Header",
   "Summary",
   "Personal Project",
+  "Selected Project",
+  "Selected Product",
+  "Projects",
   "Experience",
   "Education",
   "Skills",
@@ -33,9 +42,16 @@ async function main() {
   const outputPath = path.resolve(
     args.outputPath || path.join(path.dirname(targetPath), "compare.html"),
   );
+  const statePath = path.join(path.dirname(targetPath), "workflow-state.json");
 
   await assertFile(basePath, "Base resume HTML");
   await assertFile(targetPath, "Target resume HTML");
+  const workflowState = await readOptionalWorkflowState(statePath);
+  await assertDistinctOutputPath(outputPath, [
+    { filePath: basePath, label: "base resume" },
+    { filePath: targetPath, label: "target resume" },
+    { filePath: statePath, label: "workflow state" },
+  ]);
   await mkdir(path.dirname(outputPath), { recursive: true });
 
   const [baseHtml, targetHtml] = await Promise.all([
@@ -51,7 +67,15 @@ async function main() {
     outputPath,
   });
 
-  await writeFile(outputPath, renderComparePage(model), "utf8");
+  await atomicWriteFile(outputPath, renderComparePage(model));
+  if (workflowState) {
+    await updateWorkflowStateAfterCompare(
+      workflowState,
+      statePath,
+      targetPath,
+      outputPath,
+    );
+  }
   console.log(`Created ${path.relative(process.cwd(), outputPath)}`);
 }
 
@@ -117,7 +141,11 @@ async function assertFile(filePath, label) {
 function buildCompareModel({ baseHtml, targetHtml, basePath, targetPath, outputPath }) {
   const baseSections = extractResumeSections(baseHtml);
   const targetSections = extractResumeSections(targetHtml);
-  const sections = SECTION_ORDER.map((name) => {
+  const sectionNames = orderSectionNames([
+    ...Object.keys(baseSections),
+    ...Object.keys(targetSections),
+  ]);
+  const sections = sectionNames.map((name) => {
     const baseLines = baseSections[name] || [];
     const targetLines = targetSections[name] || [];
     const diff = diffLines(baseLines, targetLines);
@@ -149,6 +177,126 @@ function buildCompareModel({ baseHtml, targetHtml, basePath, targetPath, outputP
       unchanged: sections.reduce((sum, section) => sum + section.unchanged, 0),
     },
   };
+}
+
+function orderSectionNames(names) {
+  const uniqueNames = Array.from(new Set(names));
+  const preferredOrder = new Map(
+    SECTION_ORDER.map((name, index) => [name, index]),
+  );
+
+  return uniqueNames
+    .map((name, discoveryIndex) => ({
+      name,
+      discoveryIndex,
+      orderIndex: preferredOrder.get(name) ?? Number.POSITIVE_INFINITY,
+    }))
+    .sort((left, right) => {
+      return (
+        left.orderIndex - right.orderIndex ||
+        left.discoveryIndex - right.discoveryIndex
+      );
+    })
+    .map(({ name }) => name);
+}
+
+async function assertDistinctOutputPath(outputPath, inputs) {
+  for (const input of inputs) {
+    if (await pathsReferToSameFile(outputPath, input.filePath)) {
+      throw new Error(
+        `Compare output must differ from the ${input.label}: ${outputPath}`,
+      );
+    }
+  }
+}
+
+async function pathsReferToSameFile(leftPath, rightPath) {
+  if (path.resolve(leftPath) === path.resolve(rightPath)) return true;
+
+  try {
+    const [leftRealPath, rightRealPath] = await Promise.all([
+      realpath(leftPath),
+      realpath(rightPath),
+    ]);
+    return leftRealPath === rightRealPath;
+  } catch {
+    return false;
+  }
+}
+
+async function atomicWriteFile(outputPath, contents) {
+  const temporaryPath = path.join(
+    path.dirname(outputPath),
+    `.${path.basename(outputPath)}.${process.pid}.${randomUUID()}.tmp`,
+  );
+
+  try {
+    await writeFile(temporaryPath, contents, { encoding: "utf8", flag: "wx" });
+    await rename(temporaryPath, outputPath);
+  } catch (error) {
+    await unlink(temporaryPath).catch(() => {});
+    throw error;
+  }
+}
+
+async function readOptionalWorkflowState(statePath) {
+  try {
+    const state = JSON.parse(await readFile(statePath, "utf8"));
+    validateWorkflowState(state, statePath);
+    return state;
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    if (error.message.startsWith("Invalid workflow state")) throw error;
+    throw new Error(`Invalid workflow state JSON: ${statePath}: ${error.message}`);
+  }
+}
+
+function validateWorkflowState(state, statePath) {
+  if (!isPlainObject(state)) {
+    throw new Error(`Invalid workflow state JSON: ${statePath}: root value must be an object`);
+  }
+  for (const key of ["decisions", "checks", "outputs"]) {
+    if (state[key] !== undefined && !isPlainObject(state[key])) {
+      throw new Error(
+        `Invalid workflow state JSON: ${statePath}: ${key} must be an object`,
+      );
+    }
+  }
+}
+
+async function updateWorkflowStateAfterCompare(
+  state,
+  statePath,
+  targetPath,
+  outputPath,
+) {
+  const stateDirectory = path.dirname(targetPath);
+  const nextState = {
+    ...state,
+    updatedAt: new Date().toISOString(),
+    decisions: {
+      ...(state.decisions || {}),
+      compare: "generated",
+    },
+    checks: {
+      ...(state.checks || {}),
+      compare: "passed",
+    },
+    outputs: {
+      ...(state.outputs || {}),
+      compare: relativeStatePath(stateDirectory, outputPath),
+    },
+  };
+
+  await atomicWriteFile(statePath, `${JSON.stringify(nextState, null, 2)}\n`);
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function relativeStatePath(stateDirectory, outputPath) {
+  return path.relative(stateDirectory, outputPath).split(path.sep).join("/");
 }
 
 function extractResumeSections(html) {

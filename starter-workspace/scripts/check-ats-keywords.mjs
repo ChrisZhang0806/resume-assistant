@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { readFile, realpath, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import * as cheerio from "cheerio";
 
@@ -27,6 +27,10 @@ async function main() {
 
   await assertFile(resumePath, "Resume HTML");
   await assertFile(analysisPath, "job-analysis.md");
+  await assertDistinctOutputPath(reportPath, [
+    { filePath: resumePath, label: "resume HTML" },
+    { filePath: analysisPath, label: "job analysis" },
+  ]);
 
   const [resumeHtml, analysisMarkdown] = await Promise.all([
     readFile(resumePath, "utf8"),
@@ -56,10 +60,21 @@ async function main() {
     console.error(
       "\nAction required: Rewrite the resume so every supported Must Use keyword appears naturally in Summary, Project, Experience, or Skills.",
     );
-    process.exit(1);
   }
 
-  process.exit(0);
+  if (coverage.presentUnsupported.length > 0) {
+    console.error(
+      "\nAction required: Remove every Unsupported / Do Not Use keyword from visible resume content, or reclassify it only after verified evidence is added.",
+    );
+  }
+
+  process.exit(
+    coverage.noMustUseKeywords ||
+    coverage.missingMust.length > 0 ||
+    coverage.presentUnsupported.length > 0
+      ? 1
+      : 0,
+  );
 }
 
 function parseArgs(argv) {
@@ -111,8 +126,11 @@ Examples:
 The check fails when:
   - job-analysis.md does not contain reviewed Must Use ATS keywords.
   - Any Must Use keyword is missing from the resume.
+  - Any Unsupported / Do Not Use keyword appears in visible resume content.
 
 Missing Should Use or Optional keywords are warnings, not blockers.
+Script, style, hidden, aria-hidden, and common visually-hidden content does not
+count toward keyword coverage.
 `);
 }
 
@@ -180,9 +198,6 @@ function splitSubsections(markdown, level) {
 
 function classifyKeywordHeading(heading) {
   const label = normalizeForSearch(heading);
-  if (label.includes("must")) return "must";
-  if (label.includes("should")) return "should";
-  if (label.includes("optional")) return "optional";
   if (
     label.includes("careful") ||
     label.includes("unsupported") ||
@@ -191,6 +206,9 @@ function classifyKeywordHeading(heading) {
   ) {
     return "careful";
   }
+  if (label.includes("must")) return "must";
+  if (label.includes("should")) return "should";
+  if (label.includes("optional")) return "optional";
   return "should";
 }
 
@@ -257,7 +275,7 @@ function uniqueKeywords(keywords) {
 
 function extractResumeText(html) {
   const $ = cheerio.load(html);
-  $("script, style").remove();
+  removeNonVisibleContent($);
 
   const root = $(".resume").first().length ? $(".resume").first() : $("body");
   const sections = [];
@@ -292,15 +310,63 @@ function extractResumeText(html) {
   };
 }
 
+function removeNonVisibleContent($) {
+  $("script, style, template, noscript, svg title, svg desc").remove();
+
+  $("*").each((_, element) => {
+    const node = $(element);
+    const classNames = String(node.attr("class") || "")
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+    const style = String(node.attr("style") || "");
+    const ariaHidden = String(node.attr("aria-hidden") || "").toLowerCase() === "true";
+    const hiddenInput =
+      node.is("input") && String(node.attr("type") || "").toLowerCase() === "hidden";
+    const hiddenClass = classNames.some((className) =>
+      [
+        "hidden",
+        "is-hidden",
+        "u-hidden",
+        "d-none",
+        "sr-only",
+        "screen-reader-only",
+        "visually-hidden",
+      ].includes(className),
+    );
+    const hiddenStyle = [
+      /(?:^|;)\s*display\s*:\s*none\b/i,
+      /(?:^|;)\s*visibility\s*:\s*(?:hidden|collapse)\b/i,
+      /(?:^|;)\s*content-visibility\s*:\s*hidden\b/i,
+      /(?:^|;)\s*opacity\s*:\s*0(?:\.0*)?\b/i,
+    ].some((pattern) => pattern.test(style));
+
+    if (
+      node.attr("hidden") !== undefined ||
+      ariaHidden ||
+      hiddenInput ||
+      hiddenClass ||
+      hiddenStyle
+    ) {
+      node.remove();
+    }
+  });
+}
+
 function buildCoverage(keywordGroups, resume) {
   const allRows = [];
   const groups = {
     must: buildRows("Must Use", keywordGroups.must, resume),
     should: buildRows("Should Use", keywordGroups.should, resume),
     optional: buildRows("Optional", keywordGroups.optional, resume),
+    unsupported: buildRows(
+      "Unsupported / Do Not Use",
+      keywordGroups.careful,
+      resume,
+    ),
   };
 
-  allRows.push(...groups.must, ...groups.should, ...groups.optional);
+  allRows.push(...groups.must, ...groups.should, ...groups.optional, ...groups.unsupported);
 
   return {
     groups,
@@ -308,6 +374,7 @@ function buildCoverage(keywordGroups, resume) {
     noMustUseKeywords: keywordGroups.must.length === 0,
     missingMust: groups.must.filter((row) => !row.present),
     missingShould: groups.should.filter((row) => !row.present),
+    presentUnsupported: groups.unsupported.filter((row) => row.present),
     stuffingWarnings: allRows.filter((row) => row.count > stuffingThreshold(row.keyword)),
   };
 }
@@ -381,7 +448,9 @@ function stuffingThreshold(keyword) {
 
 function renderReport({ coverage, resumePath, analysisPath }) {
   const lines = [];
-  const status = coverage.noMustUseKeywords || coverage.missingMust.length > 0
+  const status = coverage.noMustUseKeywords ||
+    coverage.missingMust.length > 0 ||
+    coverage.presentUnsupported.length > 0
     ? "Needs rewrite"
     : "Pass";
 
@@ -395,6 +464,7 @@ function renderReport({ coverage, resumePath, analysisPath }) {
   lines.push(summaryLine("Must Use", coverage.groups.must));
   lines.push(summaryLine("Should Use", coverage.groups.should));
   lines.push(summaryLine("Optional", coverage.groups.optional));
+  lines.push(summaryLine("Unsupported / Do Not Use (must be absent)", coverage.groups.unsupported));
   lines.push("");
 
   if (coverage.noMustUseKeywords) {
@@ -421,6 +491,17 @@ function renderReport({ coverage, resumePath, analysisPath }) {
     lines.push("");
     for (const row of coverage.missingMust) {
       lines.push(`- Add \`${row.keyword}\` naturally to Summary, Project, Experience, or Skills if it is supported by verified evidence. If unsupported, move it out of Must Use and record it as a risk in \`job-analysis.md\`.`);
+    }
+  }
+
+  if (coverage.presentUnsupported.length > 0) {
+    lines.push("");
+    lines.push("## Unsupported Keyword Removal Required");
+    lines.push("");
+    for (const row of coverage.presentUnsupported) {
+      lines.push(
+        `- Remove \`${row.keyword}\` from visible resume content. If newly verified evidence supports it, update the fact base and reclassify the keyword in \`job-analysis.md\` before using it.`,
+      );
     }
   }
 
@@ -453,6 +534,7 @@ function printConsoleReport(coverage, reportPath) {
   console.log(summaryLine("Must Use", coverage.groups.must));
   console.log(summaryLine("Should Use", coverage.groups.should));
   console.log(summaryLine("Optional", coverage.groups.optional));
+  console.log(summaryLine("Unsupported / Do Not Use (must be absent)", coverage.groups.unsupported));
   console.log(`Report: ${path.relative(process.cwd(), reportPath)}`);
 
   if (coverage.missingMust.length > 0) {
@@ -463,6 +545,15 @@ function printConsoleReport(coverage, reportPath) {
   if (coverage.missingShould.length > 0) {
     console.log("\nMissing Should Use keywords:");
     coverage.missingShould.forEach((row) => console.log(`- ${row.keyword}`));
+  }
+
+  if (coverage.presentUnsupported.length > 0) {
+    console.log("\nUnsupported / Do Not Use keywords found in visible content:");
+    coverage.presentUnsupported.forEach((row) => {
+      console.log(
+        `- ${row.keyword}: ${row.locations.join(", ") || "unclassified visible content"}`,
+      );
+    });
   }
 
   if (coverage.stuffingWarnings.length > 0) {
@@ -477,7 +568,28 @@ function summaryLine(label, rows) {
 }
 
 function elementText($, element) {
-  return normalizeWhitespace($(element).text());
+  const parts = [];
+  for (const node of $(element).toArray()) {
+    collectVisibleText(node, parts);
+  }
+  return normalizeWhitespace(parts.join(""));
+}
+
+function collectVisibleText(node, parts) {
+  if (node.type === "text") {
+    parts.push(node.data || "");
+    return;
+  }
+
+  const tagName = String(node.tagName || node.name || "").toLowerCase();
+  const isBlockBoundary = /^(?:address|article|aside|blockquote|br|dd|div|dl|dt|figcaption|figure|footer|form|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|table|tbody|td|tfoot|th|thead|tr|ul)$/.test(
+    tagName,
+  );
+  if (isBlockBoundary) parts.push(" ");
+  for (const child of node.children || []) {
+    collectVisibleText(child, parts);
+  }
+  if (isBlockBoundary) parts.push(" ");
 }
 
 function normalizeWhitespace(value) {
@@ -524,4 +636,32 @@ async function assertFile(filePath, label) {
     }
     throw error;
   }
+}
+
+async function assertDistinctOutputPath(outputPath, inputs) {
+  for (const input of inputs) {
+    if (await pathsReferToSameFile(outputPath, input.filePath)) {
+      throw new Error(`ATS report must not overwrite the ${input.label}: ${outputPath}`);
+    }
+  }
+}
+
+async function pathsReferToSameFile(leftPath, rightPath) {
+  if (path.resolve(leftPath) === path.resolve(rightPath)) return true;
+
+  let leftInfo;
+  let rightInfo;
+  try {
+    [leftInfo, rightInfo] = await Promise.all([stat(leftPath), stat(rightPath)]);
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+
+  if (leftInfo.dev === rightInfo.dev && leftInfo.ino === rightInfo.ino) return true;
+  const [leftRealPath, rightRealPath] = await Promise.all([
+    realpath(leftPath),
+    realpath(rightPath),
+  ]);
+  return leftRealPath === rightRealPath;
 }

@@ -8,5 +8,10 @@ applications/*
 !applications/.gitkeep
 
 # Temporary exports
+tmp/
+reports/
 *.tmp
 *.bak
+
+# Private agent instructions
+.private-rules.md
