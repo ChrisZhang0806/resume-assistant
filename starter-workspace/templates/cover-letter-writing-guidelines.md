@@ -8,9 +8,9 @@ Use this guide only when a posting requires a cover letter or the user requests 
 - Exactly three short body paragraphs.
 - 220–300 body words.
 - Simple, professional, sincere English.
-- A different length or structure only when the user or application explicitly requires it.
+- A private rule, current user request, or application requirement may override length, structure, or the confirmation gate.
 
-Count body words before presenting the draft. Headers, contact lines, salutation, and signature are not body paragraphs. When an explicit format differs, render with `--paragraphs`, `--min-words`, and `--max-words` so validation matches the recorded decision.
+Resolve and record active constraints before drafting. Count body words before presenting or rendering the draft. Headers, address/contact lines, salutation, and signature are not body paragraphs. Pass explicit renderer options when the recorded format differs from the default.
 
 ## Contact Contract
 
@@ -18,6 +18,19 @@ Count body words before presenting the draft. Headers, contact lines, salutation
 - Location, phone, portfolio, and LinkedIn are optional.
 - Remove an unavailable optional field instead of leaving a placeholder.
 - Any supplied link or phone value must be valid; the renderer outputs only fields that are present.
+
+## Choose One Unanswered Hiring Question
+
+The letter should do one useful job that the confirmed resume does not already do:
+
+- translate a non-obvious background into the target role;
+- prove one central capability with a concrete example;
+- clarify one material concern that could block an interview;
+- explain why this kind of work is a credible next step now.
+
+Select one primary question. Do not turn the letter into a second resume or a list of every possible qualification.
+
+Being a company-product user is never required. Use product experience only when it is true and relevant. Company or role specificity may instead come from the work problem, audience, industry, team stage, public project, or the candidate's genuine reason for doing this kind of work.
 
 ## Minimal Evidence
 
@@ -31,35 +44,72 @@ Use two or three verified matching points total:
 
 Never invent company research, personal connections, tools, credentials, metrics, outcomes, work authorization, identity details, or application channels.
 
+## Candidate Fingerprint
+
+A natural letter lets the reviewer see how the candidate notices, decides, and works. Include:
+
+- at least two verified details another applicant could not copy from the posting;
+- one observation, judgment, trade-off, or genuine work preference;
+- one useful point that adds to, rather than paraphrases, the resume.
+
+This does not require a personal anecdote. Do not force hobbies, humor, hardship, product fandom, or an origin story. A hobby belongs only when it explains relevant craft, observation, motivation, or the application asks for it.
+
 ## Three-Paragraph Structure
 
-### Paragraph 1: Role Match
+### Paragraph 1: Credible Connection
 
-Name the role and company, then connect one central job need to verified evidence. Open with substance rather than generic enthusiasm.
+Explain why this role or work is a credible next step for this candidate. Open with a real connection, not a generic statement of enthusiasm.
 
 ### Paragraph 2: Primary Evidence
 
-Use one project or experience. Explain the problem or context, the candidate's method or responsibility, and the resulting value. Do not summarize several projects or repeat resume bullets verbatim.
+Use one project or experience. Show the context or friction point, the candidate's action or judgment, and the resulting value. Do not summarize several projects or repeat resume bullets verbatim.
 
-### Paragraph 3: Differentiator, Value, And Close
+### Paragraph 3: Relevant Dimension And Close
 
-Add one relevant differentiator only if useful, then explain the value the candidate could bring. When appropriate, point the reviewer to one specific portfolio case study or discussion topic.
+Address one material concern only when it genuinely affects screening. Otherwise add a relevant work preference or differentiator, explain practical value, and close simply. A specific portfolio or discussion handoff is optional.
 
 ## Voice And Keyword Use
 
-Use a few supported priority terms naturally. Do not mirror the posting or keyword-stuff. Avoid generic claims such as `perfect fit`, `uniquely qualified`, `passionate professional`, or `I am excited to leverage my skills`.
+Use a few priority terms naturally when they are supported. Do not mirror the posting or keyword-stuff.
 
-The final draft should sound human-edited and specific. Useful detail comes from verified project context, judgment, career direction, or a targeted portfolio handoff—not from generic company praise.
+Prefer concrete context, judgment, and relevance. Avoid:
+
+- `perfect fit`, `uniquely qualified`, or `passionate professional`;
+- `I am excited to leverage my skills`;
+- generic praise that could address any company;
+- inflated adjectives and unsupported impact;
+- paragraphs that merely convert resume bullets into prose.
+
+The final draft should sound human-edited and candidate-specific. A useful detail is one another applicant could not copy from the job ad: project context, design or technical judgment, a career-transition explanation, or a targeted portfolio handoff.
+
+## Optional Humanizer Edit
+
+When `$humanizer` is installed, draft from verified evidence first, then run it on prose under `templates/humanizer-resume-guardrails.md`. Calibrate to a candidate-owned writing sample when available; otherwise keep the voice restrained and professional.
+
+Preserve active word/paragraph limits, candidate fingerprint, facts, names, role/company details, metrics, links, and supported keywords. Reject invented anecdotes, opinions, research, connections, or specificity. Humanizer should improve rhythm and plain language without removing a verified observation, decision, trade-off, work preference, or transition reason.
+
+## Resume And Portfolio Relationship
+
+- The resume proves qualifications through facts, titles, tools, and outcomes.
+- The letter explains why one strongest proof point matters to this role.
+- The portfolio or interview carries detailed process and storytelling.
 
 ## Quality Gate
 
 Before presenting `cover-letter.md`, verify:
 
-- 220–300 body words and exactly three body paragraphs, unless an explicit override is recorded;
+- active body-word and paragraph limits are satisfied;
 - correct candidate, company, role, and required email;
-- optional contact fields are either valid or removed;
+- optional contact fields are valid or removed;
 - only verified evidence and supported keywords;
-- one primary proof point and a clear company-value connection;
-- no resume repetition, keyword-spun boilerplate, or generic AI phrasing.
+- one unanswered hiring question and one primary proof point;
+- candidate fingerprint requirements pass;
+- at least one useful point is new relative to the resume;
+- the role-swap and read-aloud tests pass;
+- no resume repetition, forced product/company praise, keyword-spun boilerplate, or generic AI phrasing;
+- any Humanizer diff was reviewed with facts, keywords, and format constraints unchanged;
+- a useful specific portfolio or discussion handoff when relevant.
 
-After the user confirms the Markdown draft, render HTML, verify layout, export PDF, and check the actual page count. Do not render before that confirmation unless the gate was explicitly waived.
+If a check fails, replace generic or duplicated content with verified context, judgment, or motivation; do not fix it with synonym swaps. Repeat the quality gate after each rewrite.
+
+After the user confirms the Markdown draft, render HTML, verify layout, export PDF, and check actual page count. If the active confirmation gate is waived, continue directly through those steps.

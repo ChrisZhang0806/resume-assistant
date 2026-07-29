@@ -10,13 +10,17 @@ Dear Hiring Team,
 
 Drafting note: remove all instructional text and replace every placeholder before presenting this file.
 
-Use `templates/cover-letter-writing-guidelines.md`. Default to one A4 page, exactly three short body paragraphs, and 220–300 body words unless the user or application explicitly requires another format.
+Use `templates/cover-letter-writing-guidelines.md`. Resolve the active length, structure, and confirmation rules before drafting.
 
-Paragraph 1: apply for the [Role] position at [Company] and connect one central job need to the candidate's strongest verified match.
+Selected unanswered hiring question: [experience translation / capability proof / concern clarification / why this work now].
 
-Paragraph 2: use one primary project or experience. Explain its problem or context, the candidate's method or responsibility, and the value relevant to this role. Do not summarize several projects or repeat resume bullets.
+Candidate fingerprint evidence: [two verified candidate-specific details] and [one observation, decision, trade-off, or work preference].
 
-Paragraph 3: add one differentiating background point only when useful, then close with practical company value or a specific portfolio or discussion handoff. Avoid generic enthusiasm and unsupported claims.
+Paragraph 1: explain why this role or work is a credible next step without forcing company praise or product use.
+
+Paragraph 2: use one primary project or experience. Show its context, the candidate's action or judgment, and practical value without repeating resume bullets.
+
+Paragraph 3: address one material concern only when needed; otherwise add a relevant work preference or differentiator and close simply.
 
 Sincerely,
 

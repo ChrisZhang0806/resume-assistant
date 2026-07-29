@@ -26,6 +26,7 @@ test("workspace phase routes remain present and bounded", async () => {
   const agents = await readFile(agentsPath, "utf8");
   const phaseFiles = [
     "setup.md",
+    "job-search.md",
     "import-analysis.md",
     "resume-finalize.md",
     "cover-letter.md",
@@ -40,6 +41,17 @@ test("workspace phase routes remain present and bounded", async () => {
   }
 
   assert.ok(Buffer.byteLength(agents) <= 15_000, "AGENTS.md exceeds its always-on budget");
+
+  const [coverWorkflow, coverGuidelines] = await Promise.all([
+    readFile(path.join(workspaceDir, "workflows", "cover-letter.md"), "utf8"),
+    readFile(
+      path.join(workspaceDir, "templates", "cover-letter-writing-guidelines.md"),
+      "utf8",
+    ),
+  ]);
+  assert.match(coverWorkflow, /Choose The Letter's One Job/);
+  assert.match(coverWorkflow, /Candidate Fingerprint And Rewrite Loop/);
+  assert.match(coverGuidelines, /company-product user is never required/i);
 });
 
 test("repository skill metadata and instruction budget remain valid", async (t) => {

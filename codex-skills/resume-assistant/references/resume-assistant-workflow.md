@@ -4,7 +4,7 @@ Use this standalone fallback only when a workspace has no complete local `AGENTS
 
 ## Purpose
 
-Create truthful, job-specific English resumes from a complete job posting, a reusable fact base, and a base HTML/CSS template. Optional outputs include compare previews, cover letters, PDFs, and application tracking.
+Find a small set of current job leads when requested, then create truthful, job-specific English resumes from a complete selected posting, a reusable fact base, and a base HTML/CSS template. Optional outputs include compare previews, cover letters, PDFs, and application tracking.
 
 ## Invariants
 
@@ -22,6 +22,8 @@ Before the first job, build a truthful base resume and modular fact base. Start 
 Treat working copies as private. Do not publish filled facts, contacts, application records, imported postings, generated documents, or local private instructions.
 
 ## Capture And Import
+
+When the user asks to find jobs and the workspace provides a local search phase, run focused, personal, low-volume searches and present a provisional shortlist. Treat results as leads, do not fetch people profiles or create application files, and wait for the user to select a posting.
 
 For every HTTP/HTTPS job URL, open the page in the browser, capture complete visible job-detail text, remove page chrome/noise, and import the original URL with `--browser-text`. URL-only import is forbidden. If capture is incomplete, request pasted/attached visible text.
 
@@ -82,6 +84,8 @@ Export is fail-closed. Confirm the PDF is non-empty and actual page count matche
 ## Cover Letter
 
 Write one only when required or requested. Use confirmed analysis/resume, contact facts, and one primary evidence source. Default to exactly three short body paragraphs and 220–300 body words on one A4 page unless another format is explicitly required.
+
+Choose one important question the resume leaves unanswered. Build around one primary proof point, at least two verified candidate-specific details, and one observation, judgment, trade-off, or genuine work preference. Do not force company praise, product use, hobbies, or personal disclosure. Require resume novelty, role-swap, read-aloud, fact, and format checks. When `$humanizer` is installed, apply the workspace guardrails after the evidence draft and review its diff.
 
 After Markdown confirmation:
 
