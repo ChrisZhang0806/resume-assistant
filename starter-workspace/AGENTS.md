@@ -17,6 +17,7 @@ Preserve user edits. Private rules may specialize defaults but never authorize i
 | Active task | Read |
 | --- | --- |
 | New workspace, intake, base template, reusable facts | `workflows/setup.md` |
+| Find or shortlist current job openings | `workflows/job-search.md` |
 | Capture job, import posting, fit/ATS analysis | `workflows/import-analysis.md` |
 | Rewrite resume, ATS/layout checks, compare, PDF | `workflows/resume-finalize.md` |
 | Draft or render a cover letter | `workflows/cover-letter.md` |
@@ -59,6 +60,8 @@ For v2 use `imported` → `analysis-confirmed` → `resume-drafted` → `resume-
 - Use Pretext for layout and wrapping only, not factual or ATS reasoning.
 
 ## Job Source Rule
+
+Automated search results are discovery leads, not verified evidence. Keep searches personal and low-volume, then route a selected result through the visible-source rule below.
 
 For every HTTP/HTTPS job URL:
 
@@ -118,7 +121,8 @@ Never reduce side padding/global font size, clip content, hide print content, fi
 
 - Default cover letter: one A4 page, exactly three short body paragraphs, 220–300 body words.
 - Use another format only when explicitly required and pass matching renderer/layout options.
-- Use two or three verified matching points led by one project or experience.
+- Choose one unanswered hiring question, use one primary proof point, and require candidate-specific details plus real judgment or work preference.
+- When `$humanizer` is installed, apply `templates/humanizer-resume-guardrails.md` after the evidence draft and review its diff.
 - Preserve application-log manual edits and validate an existing hash before an authorized change.
 
 ## Required Delivery

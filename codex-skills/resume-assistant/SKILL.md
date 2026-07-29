@@ -1,6 +1,6 @@
 ---
 name: resume-assistant
-description: Tailor verified, job-specific English resumes and cover letters from a Resume Assistant workspace. Use for job capture and analysis, target resume HTML/CSS, ATS and layout checks, compare previews, PDFs, cover letters, application tracking, reusable facts, or template setup without inventing experience.
+description: Find current job leads and tailor verified, job-specific English resumes and cover letters from a Resume Assistant workspace. Use for low-volume job search, job capture and analysis, target resume HTML/CSS, ATS and layout checks, compare previews, PDFs, cover letters, application tracking, reusable facts, or template setup without inventing experience.
 ---
 
 # Resume Assistant
@@ -16,6 +16,7 @@ description: Tailor verified, job-specific English resumes and cover letters fro
 ## Core Contract
 
 - Use verified candidate facts only. Never invent or upgrade employers, titles, dates, locations, tools, credentials, metrics, outcomes, seniority, work authorization, or application status.
+- Treat automated search output as discovery leads only; keep portal use personal and low-volume.
 - Preserve user edits. Keep job-specific files under one active `applications/{yyyy-mm-dd-company-role}/`; never edit reusable base HTML/CSS for one job.
 - Respect the workspace's declared template and page target. The public starter defaults to one-page A4.
 - For HTTP/HTTPS job URLs, capture complete visible job-detail text through the browser and import the original URL with `--browser-text`. URL-only import is not allowed.
@@ -37,13 +38,14 @@ Record/present the resume modification plan and proceed without a separate gate.
 ## Standard Route
 
 1. Complete setup when the reusable base or fact base still has explicit placeholders.
-2. Capture/import the posting into one active application folder.
-3. Retrieve only relevant evidence anchors, classify requirements/ATS terms, map placement, and confirm analysis.
-4. Record the plan; copy base HTML/CSS into the application folder and rewrite local files.
-5. Run ATS and layout checks; revise supported content without clipping or silently changing the target.
-6. Generate compare only when requested, export PDF, and verify actual page count.
-7. If needed, draft and confirm the cover letter before rendering/verifying/exporting it.
-8. Update tracking only from explicit intent or status.
+2. When job discovery is requested, follow the local search phase and stop at a shortlist.
+3. Capture/import the selected posting into one active application folder.
+4. Retrieve only relevant evidence anchors, classify requirements/ATS terms, map placement, and confirm analysis.
+5. Record the plan; copy base HTML/CSS into the application folder and rewrite local files.
+6. Run ATS and layout checks; revise supported content without clipping or silently changing the target.
+7. Generate compare only when requested, export PDF, and verify actual page count.
+8. If needed, draft and confirm the cover letter before rendering/verifying/exporting it.
+9. Update tracking only from explicit intent or status.
 
 ## Delivery
 

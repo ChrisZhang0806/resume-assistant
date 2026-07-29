@@ -22,7 +22,7 @@ npm run verify-layout -- base/index.html -v
 | Path | Purpose |
 | --- | --- |
 | `AGENTS.md` | Short invariant set and phase router |
-| `workflows/` | Phase-specific execution details |
+| `workflows/` | Setup, job discovery, application, and tracking phases |
 | `base/` | Reusable resume/CSS and cover-letter layout |
 | `master/master-data/00-index.md` | Fact-module router |
 | `master/master-data/` | Verified reusable facts |
@@ -32,6 +32,22 @@ npm run verify-layout -- base/index.html -v
 | `scripts/` | Local validation and artifact helpers |
 
 Do not edit base resume files for one job. Targeting belongs in `applications/{yyyy-mm-dd-company-role}/resume.html` and its local `styles.css`.
+
+## Find Jobs
+
+Search LinkedIn's public job listings without an account or API key:
+
+```bash
+npm run search-jobs -- search -q "Product Designer" -l "Berlin, Germany" --jobage 7 --limit 10 --format table
+```
+
+Retrieve one listing for quick triage:
+
+```bash
+npm run search-jobs -- detail 4430123456 --format plain
+```
+
+The command is adapted from the MIT-licensed `linkedin-search` CLI in `MadsLorentzen/ai-job-search` and uses the existing Node 20 runtime. LinkedIn automated access may conflict with its Terms of Service; keep use personal and low-volume. Search output is a lead, not verified evidence. Open a selected URL in the in-app browser and follow the normal import flow before analysis or resume work.
 
 ## Import A Job
 
@@ -83,6 +99,7 @@ Use renderer and layout overrides only for an explicitly required format.
 | `npm run check:scripts` | Syntax-check helper scripts |
 | `npm test` | Run regression tests |
 | `npm run audit` | Run syntax, tests, and doctor |
+| `npm run search-jobs -- …` | Search or retrieve LinkedIn public job listings |
 | `npm run import-job -- …` | Create/import a job workspace |
 | `npm run check-ats -- …` | Verify reviewed keyword coverage |
 | `npm run verify-layout -- …` | Check height, wrapping, and layout policy |
