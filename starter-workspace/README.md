@@ -35,19 +35,19 @@ Do not edit base resume files for one job. Targeting belongs in `applications/{y
 
 ## Find Jobs
 
-Search LinkedIn's public job listings without an account or API key:
+Search LinkedIn and Indeed Canada in parallel without an account or user-supplied API key:
 
 ```bash
-npm run search-jobs -- search -q "Product Designer" -l "Berlin, Germany" --jobage 7 --limit 10 --format table
+npm run search-jobs -- search -q "Product Designer" -l "Toronto, Ontario, Canada" --jobage 7 --limit 10 --format table
 ```
 
-Retrieve one listing for quick triage:
+Retrieve one LinkedIn listing for quick triage:
 
 ```bash
 npm run search-jobs -- detail 4430123456 --format plain
 ```
 
-The command is adapted from the MIT-licensed `linkedin-search` CLI in `MadsLorentzen/ai-job-search` and uses the existing Node 20 runtime. LinkedIn automated access may conflict with its Terms of Service; keep use personal and low-volume. Search output is a lead, not verified evidence. Open a selected URL in the in-app browser and follow the normal import flow before analysis or resume work.
+The command combines the MIT-licensed `linkedin-search` CLI in `MadsLorentzen/ai-job-search` with `ts-jobspy` for Indeed. LinkedIn accepts explicit locations worldwide; the Indeed source is fixed to Canada. Automated access may conflict with either platform's Terms of Service, so keep use personal and low-volume. Search output is a lead, not verified evidence. Open a selected URL in the in-app browser and follow the normal import flow before analysis or resume work.
 
 ## Import A Job
 
@@ -99,7 +99,7 @@ Use renderer and layout overrides only for an explicitly required format.
 | `npm run check:scripts` | Syntax-check helper scripts |
 | `npm test` | Run regression tests |
 | `npm run audit` | Run syntax, tests, and doctor |
-| `npm run search-jobs -- …` | Search or retrieve LinkedIn public job listings |
+| `npm run search-jobs -- …` | Search LinkedIn and Indeed Canada, or retrieve one LinkedIn listing |
 | `npm run import-job -- …` | Create/import a job workspace |
 | `npm run check-ats -- …` | Verify reviewed keyword coverage |
 | `npm run verify-layout -- …` | Check height, wrapping, and layout policy |
