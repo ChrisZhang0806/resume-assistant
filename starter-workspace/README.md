@@ -57,7 +57,13 @@ For a URL, capture the complete visible job-detail text in the in-app browser, r
 npm run import-job -- "https://example.com/jobs/role" --browser-text "tmp/job-visible.txt"
 ```
 
-URL-only import is disabled. A new v2 folder contains `job-posting.txt`, compact `job-analysis.md`, and `workflow-state.json`. Historical schemas remain supported and are not bulk-migrated.
+URL-only import is disabled. A new v2 folder contains `job-posting.txt`, compact `job-analysis.md`, and `workflow-state.json`. The import also records a read-only check against `application-log.md`; a prior match must be resolved before analysis. Historical schemas remain supported and are not bulk-migrated.
+
+For an existing application folder, run the same preflight manually:
+
+```bash
+npm run check-history -- "applications/yyyy-mm-dd-company-role"
+```
 
 After completing analysis, confirm it before target resume creation/editing.
 
@@ -101,6 +107,7 @@ Use renderer and layout overrides only for an explicitly required format.
 | `npm run audit` | Run syntax, tests, and doctor |
 | `npm run search-jobs -- …` | Search LinkedIn and Indeed Canada, or retrieve one LinkedIn listing |
 | `npm run import-job -- …` | Create/import a job workspace |
+| `npm run check-history -- …` | Check the application log for a prior matching role without editing it |
 | `npm run check-ats -- …` | Verify reviewed keyword coverage |
 | `npm run verify-layout -- …` | Check height, wrapping, and layout policy |
 | `npm run compare -- …` | Generate optional compare preview |

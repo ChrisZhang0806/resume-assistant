@@ -43,7 +43,9 @@ Custom/multi-page template:
 npm run verify-layout -- "applications/{folder}/resume.html" -v --pages N --custom-template
 ```
 
-Fix invalid or overlong bullets first, then shorten near-wrap text, move compact supported terms to Skills, and merge/remove weak evidence. Only after content is concise should application-local default-template gaps use allowed values. Never clip content, hide print content, reduce side padding/global font size, or silently change the page target.
+Fix invalid or overlong bullets first. If the default centered header materially causes overflow, apply the application-local compact split header from `templates/header-style-options.md`. Then shorten near-wrap text, move compact supported terms to Skills, and merge/remove weak evidence. Only after content is concise should application-local default-template gaps use allowed values. Never clip content, hide print content, reduce side padding/global font size, or silently change the page target.
+
+After the page fits, inspect the exported PDF for obvious bottom-heavy imbalance. Adjust application-local top spacing only when needed, without changing the page box or causing clipping, then rerun layout and page-count checks.
 
 ## Compare And PDF
 

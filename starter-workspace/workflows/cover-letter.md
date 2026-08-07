@@ -52,6 +52,8 @@ The draft must include at least two verified details another applicant could not
 - Paragraph 1 explains why this role or work is a credible next step.
 - Paragraph 2 uses one primary experience to show context, action or judgment, and practical value.
 - Paragraph 3 addresses one material concern only when needed; otherwise add a relevant work preference or differentiator and close simply.
+- Carry one idea across the paragraphs: role connection -> proof -> role value/close. Do not restart with unrelated evidence in paragraphs 2 or 3.
+- Open with candidate-owned reasoning rather than `I am writing to apply`; let verified actions prove qualities instead of listing traits.
 - Do not repeat resume bullets, mirror the posting, overpraise the company, or use generic AI promotion.
 - Never invent research, connections, tools, metrics, identity, status, or application channels.
 
@@ -75,7 +77,8 @@ Run every check:
 3. **Resume novelty:** at least one useful sentence adds reasoning, context, or motivation.
 4. **Role-swap test:** changing only the role title would make the letter inaccurate or incomplete.
 5. **Plain-language test:** it sounds natural when read aloud.
-6. **Fact and format:** candidate, company, role, evidence, links, active limits, and supported terms remain correct.
+6. **Continuity and voice:** each paragraph follows from the prior one, the opening is candidate-owned, and every claimed quality is supported by evidence.
+7. **Fact and format:** candidate, company, role, evidence, links, active limits, and supported terms remain correct.
 
 If a check fails, replace generic or duplicated text with verified context, judgment, or motivation rather than synonyms, then repeat the full check.
 

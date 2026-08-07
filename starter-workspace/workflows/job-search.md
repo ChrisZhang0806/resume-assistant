@@ -86,6 +86,6 @@ After the user selects a job:
 2. Capture the complete visible posting text.
 3. Load `workflows/import-analysis.md`.
 4. Import with the original URL and `--browser-text`.
-5. Continue through the mandatory historical check, E/S/A priority analysis, and analysis confirmation gate.
+5. Continue through the mandatory historical check, requirement-priority analysis, and analysis confirmation gate.
 
 Do not create a resume, application folder, or `Submitted` log entry from search output alone.

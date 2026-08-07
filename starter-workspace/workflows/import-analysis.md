@@ -20,6 +20,19 @@ New v2 imports create:
 
 `--force` replaces all three control artifacts. Inspect an existing folder before using it. Historical folders without state or with an embedded posting remain valid and are not bulk-migrated.
 
+## Historical Application Preflight
+
+Every new import records a read-only `historyCheck` in `workflow-state.json` and a matching `history-check` block in `job-analysis.md`. For an existing application folder, run:
+
+```bash
+npm run check-history -- "applications/{folder}"
+```
+
+- If the check is incomplete, stop and resolve the missing company, role, or application log.
+- If no match exists, keep `userDecision: "not-required"` and continue.
+- If a prior URL, company-role, or same-company similar-role match exists, show the prior date, status, URL, and stored resume/folder when available. Ask whether to stop or continue, then record that explicit decision in both analysis and state.
+- Never update `application-log.md`, prior application status, or historical files during this check.
+
 ## Selective Fact Retrieval
 
 1. Read `master/master-resume.md` and `master/master-data/00-index.md`.

@@ -45,12 +45,13 @@ Then follow `FIRST-TIME-SETUP.md`, optional `USER-INTAKE.md`, and the workspace 
 
 1. Build a reusable fact base and base HTML/CSS template.
 2. Capture visible job-page text and import it with the original URL plus `--browser-text`.
-3. Keep complete source in `job-posting.txt`, compact conclusions in `job-analysis.md`, and v2 machine state in `workflow-state.json`.
-4. Confirm analysis, then rewrite only application-local HTML/CSS.
-5. Run ATS, layout, PDF, and actual page-count checks.
-6. Generate compare only when requested.
-7. If needed, confirm cover-letter Markdown before rendering HTML/PDF.
-8. Track status only from explicit user intent; never infer submission.
+3. Run the read-only historical application preflight and resolve any prior match.
+4. Keep complete source in `job-posting.txt`, compact conclusions in `job-analysis.md`, and v2 machine state in `workflow-state.json`.
+5. Confirm analysis, then rewrite only application-local HTML/CSS.
+6. Run ATS, layout, PDF, and actual page-count checks.
+7. Generate compare only when requested.
+8. If needed, confirm cover-letter Markdown before rendering HTML/PDF.
+9. Track status only from explicit user intent; never infer submission.
 
 The only default confirmation gates are job analysis and cover-letter Markdown.
 

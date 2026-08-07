@@ -22,9 +22,11 @@ description: Find current job leads and tailor verified, job-specific English re
 - For HTTP/HTTPS job URLs, capture complete visible job-detail text through the browser and import the original URL with `--browser-text`. URL-only import is not allowed.
 - Route through `master/master-data/00-index.md`; search relevant headings before opening one or two detail modules. Do not load the whole evidence map or long narratives by default.
 - Keep complete posting text in `job-posting.txt`, compact conclusions and one evidence-placement matrix in `job-analysis.md`, and machine-readable phase/check state in `workflow-state.json` when supported.
+- Before analysis, run the workspace's read-only historical application check; a prior match requires an explicit stop/continue decision and never authorizes a log write.
 - Unsupported requirements remain risks. Confirm missing facts instead of inventing evidence.
 - Use Pretext for layout only. Run ATS, layout, export, and actual PDF page-count checks against the same declared target.
-- Default cover letter: one A4 page, exactly three short body paragraphs, 220–300 body words, and verified evidence only unless another format is explicitly required.
+- When the default centered header materially causes overflow, use the workspace's application-local compact header option before destructive compression.
+- Default cover letter: one A4 page, exactly three short body paragraphs, 220–300 body words, verified evidence, and a role connection -> proof -> role value/close chain unless another format is explicitly required.
 
 ## Gates And Preferences
 
@@ -40,7 +42,7 @@ Record/present the resume modification plan and proceed without a separate gate.
 1. Complete setup when the reusable base or fact base still has explicit placeholders.
 2. When job discovery is requested, follow the local search phase and stop at a shortlist.
 3. Capture/import the selected posting into one active application folder.
-4. Retrieve only relevant evidence anchors, classify requirements/ATS terms, map placement, and confirm analysis.
+4. Resolve the historical application preflight, then retrieve only relevant evidence anchors, classify requirements/ATS terms, map placement, and confirm analysis.
 5. Record the plan; copy base HTML/CSS into the application folder and rewrite local files.
 6. Run ATS and layout checks; revise supported content without clipping or silently changing the target.
 7. Generate compare only when requested, export PDF, and verify actual page count.
