@@ -45,6 +45,20 @@ Do not treat one location string as complete coverage. When relevant to the user
 
 Use a 7-day current pass and, when needed, a 30-90-day backfill. Retain older leads only when the original employer or ATS page still accepts applications. Before reporting no suitable results, state which queries, locations, date windows, and sources were actually checked.
 
+## Retrieval Quality Control
+
+Use two passes for each active role family:
+
+1. **Precision pass:** search two to four title aliases, using `title:"..."` when exact title filtering is needed.
+2. **Recall pass:** search one responsibility cluster plus one industry or work-context cluster without requiring a title.
+
+Review results before changing the query, and adjust only one dimension at a time:
+
+- If more than half the results are irrelevant, split the title family or tighten one responsibility/context cluster.
+- If the query reaches the 10-result limit, treat it as saturated and split it before claiming coverage.
+- If fewer than three plausible results appear, widen the location, date window, or one context constraint, not all three together.
+- Keep a newly observed title or alias temporary until it recurs across two independent employers or clearly represents a standard job family.
+
 ## Review
 
 Treat search output as discovery data, not verified application evidence.
@@ -72,6 +86,6 @@ After the user selects a job:
 2. Capture the complete visible posting text.
 3. Load `workflows/import-analysis.md`.
 4. Import with the original URL and `--browser-text`.
-5. Continue through the mandatory historical check, E/S/A priority analysis, and analysis confirmation gate.
+5. Continue through the mandatory historical check, requirement-priority analysis, and analysis confirmation gate.
 
 Do not create a resume, application folder, or `Submitted` log entry from search output alone.

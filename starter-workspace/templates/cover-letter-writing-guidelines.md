@@ -68,6 +68,14 @@ Use one project or experience. Show the context or friction point, the candidate
 
 Address one material concern only when it genuinely affects screening. Otherwise add a relevant work preference or differentiator, explain practical value, and close simply. A specific portfolio or discussion handoff is optional.
 
+## Paragraph Continuity
+
+Build one chain: credible connection -> primary proof -> role value and close. Paragraph 2 should pick up the claim or work problem introduced in paragraph 1. Paragraph 3 should explain what the proof means for the target role; do not restart with an unrelated story or introduce a new major qualification.
+
+## Evidence-Backed Voice
+
+Open with a candidate-owned observation, decision, or reason for pursuing the work, not `I am writing to apply`. Use concrete nouns and verbs, restrained professional English, and varied sentence lengths. Let verified actions demonstrate qualities instead of naming traits without proof. When useful, compress context, action, and value into one compact work scene rather than an inventory of claims. Follow the candidate's writing sample, voice traits, and contractions preference when provided.
+
 ## Voice And Keyword Use
 
 Use a few priority terms naturally when they are supported. Do not mirror the posting or keyword-stuff.
@@ -103,6 +111,8 @@ Before presenting `cover-letter.md`, verify:
 - optional contact fields are valid or removed;
 - only verified evidence and supported keywords;
 - one unanswered hiring question and one primary proof point;
+- a continuous role connection -> proof -> role value/close paragraph chain;
+- a candidate-owned opening and evidence-backed voice;
 - candidate fingerprint requirements pass;
 - at least one useful point is new relative to the resume;
 - the role-swap and read-aloud tests pass;

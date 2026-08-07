@@ -37,6 +37,9 @@ Before the first tailoring task, make sure the workspace has:
 - Cover letter usually needed: yes / no / only when required
 - Preferred cover letter length:
 - Preferred cover letter tone:
+- Candidate-owned English writing sample or file path:
+- Voice traits to preserve:
+- Contractions preference: yes / no / either
 
 ## Template Preferences
 

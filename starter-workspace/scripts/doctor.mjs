@@ -201,6 +201,7 @@ async function checkRequiredStructure() {
     ["templates/job-analysis-template.md", "file"],
     ["templates/cover-letter-draft-template.md", "file"],
     ["scripts/import-job.mjs", "file"],
+    ["scripts/check-application-history.mjs", "file"],
     ["scripts/check-ats-keywords.mjs", "file"],
     ["scripts/generate-compare-preview.mjs", "file"],
     ["scripts/generate-cover-letter-html.mjs", "file"],
@@ -280,6 +281,7 @@ async function checkPackageScripts(packageJson) {
     "doctor",
     "check:scripts",
     "import-job",
+    "check-history",
     "check-ats",
     "verify-layout",
     "compare",
@@ -604,6 +606,7 @@ function checkScriptSyntax() {
 
   const scripts = [
     "scripts/import-job.mjs",
+    "scripts/check-application-history.mjs",
     "scripts/check-ats-keywords.mjs",
     "scripts/generate-compare-preview.mjs",
     "scripts/generate-cover-letter-html.mjs",

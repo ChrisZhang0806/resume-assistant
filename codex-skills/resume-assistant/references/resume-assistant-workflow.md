@@ -35,6 +35,12 @@ New v2 folders use:
 
 Legacy folders without state remain supported.
 
+## Historical Application Preflight
+
+Before fit/ATS analysis, compare the current URL, company, and role against `application-log.md` using the workspace's read-only history checker. New imports should record the result automatically; for an existing folder run `npm run check-history -- "applications/{folder}"` when available.
+
+Continue immediately when no match exists. When a prior match exists, show the available date, status, URL, and stored resume/folder, then require an explicit stop/continue decision. The check never authorizes edits to the log or historical files.
+
 ## Selective Analysis
 
 Read `master/master-resume.md` and `master/master-data/00-index.md`, search relevant headings/aliases, then open only matching source sections and one or two routed detail modules. Expand only for a distinct central evidence gap.
@@ -65,7 +71,7 @@ npm run check-ats -- "applications/{folder}/resume.html"
 npm run verify-layout -- "applications/{folder}/resume.html" -v
 ```
 
-For overflow, fix weak/overlong bullets, shorten near-wrap text, move compact supported terms to Skills, merge/remove weak evidence, then use only allowed local gap adjustments. Never clip/hide content, reduce global font/side padding, or silently change the page target.
+For overflow, fix weak/overlong bullets, use an application-local compact header when the centered header is the material cause, shorten near-wrap text, move compact supported terms to Skills, merge/remove weak evidence, then use only allowed local gap adjustments. Never clip/hide content, reduce global font/side padding, or silently change the page target.
 
 Generate compare only when requested:
 
@@ -85,7 +91,7 @@ Export is fail-closed. Confirm the PDF is non-empty and actual page count matche
 
 Write one only when required or requested. Use confirmed analysis/resume, contact facts, and one primary evidence source. Default to exactly three short body paragraphs and 220–300 body words on one A4 page unless another format is explicitly required.
 
-Choose one important question the resume leaves unanswered. Build around one primary proof point, at least two verified candidate-specific details, and one observation, judgment, trade-off, or genuine work preference. Do not force company praise, product use, hobbies, or personal disclosure. Require resume novelty, role-swap, read-aloud, fact, and format checks. When `$humanizer` is installed, apply the workspace guardrails after the evidence draft and review its diff.
+Choose one important question the resume leaves unanswered. Build around one primary proof point, at least two verified candidate-specific details, and one observation, judgment, trade-off, or genuine work preference. Link the paragraphs as role connection -> proof -> role value/close; use a candidate-owned opening and let verified actions prove qualities. Do not force company praise, product use, hobbies, or personal disclosure. Require resume novelty, role-swap, read-aloud, continuity, fact, and format checks. When `$humanizer` is installed, apply the workspace guardrails after the evidence draft and review its diff.
 
 After Markdown confirmation:
 

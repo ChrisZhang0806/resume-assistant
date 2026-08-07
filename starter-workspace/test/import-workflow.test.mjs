@@ -66,6 +66,10 @@ test("v2 import separates complete source, compact analysis, and core state", as
     assert.match(source, /design systems and accessibility/i);
     assert.equal(state.workflowVersion, 2);
     assert.equal(state.stage, "imported");
+    assert.equal(state.historyCheck.status, "complete");
+    assert.equal(state.historyCheck.matchType, "none");
+    assert.equal(state.historyCheck.userDecision, "not-required");
+    assert.equal((analysis.match(/```history-check/g) || []).length, 1);
     assert.equal(state.decisions.analysisConfirmed, false);
     assert.equal(state.decisions.analysisConfirmation, "pending");
     assert.equal(state.source.sha256, digest(source));
@@ -74,6 +78,7 @@ test("v2 import separates complete source, compact analysis, and core state", as
       "applicationFolder",
       "checks",
       "decisions",
+      "historyCheck",
       "job",
       "outputs",
       "source",
@@ -252,6 +257,10 @@ test("template render failure leaves existing artifacts unchanged", async () => 
     ]);
     await Promise.all([
       copyFile(path.join(WORKSPACE, IMPORT_SCRIPT), path.join(miniWorkspace, IMPORT_SCRIPT)),
+      copyFile(
+        path.join(WORKSPACE, "scripts", "check-application-history.mjs"),
+        path.join(miniWorkspace, "scripts", "check-application-history.mjs"),
+      ),
       copyFile(
         path.join(WORKSPACE, "scripts", "fixtures", "sample-job.html"),
         path.join(miniWorkspace, "scripts", "fixtures", "sample-job.html"),

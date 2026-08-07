@@ -12,6 +12,10 @@ import {
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  HISTORY_VERSION,
+  checkApplicationHistory,
+} from "./check-application-history.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OUT_ROOT = "applications";
@@ -48,6 +52,13 @@ async function main() {
   const analysisPath = path.join(taskDir, "job-analysis.md");
   const sourcePath = path.join(taskDir, "job-posting.txt");
   const statePath = path.join(taskDir, "workflow-state.json");
+  const historyCheck = await checkApplicationHistory({
+    logPath: path.join(ROOT, "application-log.md"),
+    company: extracted.company,
+    role: extracted.title,
+    currentSource: fetched.finalUrl || args.source,
+    checkedAt: applicationDate,
+  });
 
   const existingOutput = await firstExistingPath([analysisPath, sourcePath, statePath]);
   if (!args.force && existingOutput) {
@@ -72,6 +83,7 @@ async function main() {
     fetched,
     extracted,
     sourceSha256,
+    historyCheck,
   });
   const stateContent = `${JSON.stringify(
     renderWorkflowState({
@@ -80,6 +92,7 @@ async function main() {
       source: args.source,
       extracted,
       sourceSha256,
+      historyCheck,
     }),
     null,
     2,
@@ -98,6 +111,14 @@ async function main() {
   console.log(`Created ${path.relative(ROOT, analysisPath)}`);
   console.log(`Created ${path.relative(ROOT, sourcePath)}`);
   console.log(`Created ${path.relative(ROOT, statePath)}`);
+
+  if (historyCheck.status !== "complete") {
+    console.log(`Historical application check incomplete: ${historyCheck.error}`);
+    console.log("Stop before analysis and resolve the history-check input.");
+  } else if (historyCheck.matches.length > 0) {
+    console.log(`Historical application match found: ${historyCheck.matches.length} prior record(s).`);
+    console.log("Stop before analysis and ask the user whether to stop or continue.");
+  }
 
   if (extracted.status !== "complete") {
     console.log(
@@ -871,6 +892,7 @@ function renderJobAnalysis({
   fetched,
   extracted,
   sourceSha256,
+  historyCheck,
 }) {
   const values = {
     COMPANY: extracted.company || "Not extracted",
@@ -893,6 +915,7 @@ function renderJobAnalysis({
     JOB_FUNCTION: extracted.jobFunction || "Not extracted",
     INDUSTRY: extracted.industry || "Not extracted",
     EXTRACTION_NOTES: extracted.extractionNotes.map((note) => `- ${note}`).join("\n"),
+    HISTORY_CHECK_JSON: JSON.stringify(historyCheck, null, 2),
     SUGGESTED_KEYWORDS: extracted.keywords.length > 0
       ? extracted.keywords.map((keyword) => `- ${keyword}`).join("\n")
       : "- TODO: Add supported secondary keywords after reviewing job-posting.txt.",
@@ -912,7 +935,14 @@ function renderJobAnalysis({
   return rendered;
 }
 
-function renderWorkflowState({ applicationDate, taskDir, source, extracted, sourceSha256 }) {
+function renderWorkflowState({
+  applicationDate,
+  taskDir,
+  source,
+  extracted,
+  sourceSha256,
+  historyCheck,
+}) {
   return {
     workflowVersion: WORKFLOW_VERSION,
     stage: "imported",
@@ -929,6 +959,7 @@ function renderWorkflowState({ applicationDate, taskDir, source, extracted, sour
       path: "job-posting.txt",
       sha256: sourceSha256,
     },
+    historyCheck,
     decisions: {
       analysisConfirmed: false,
       analysisConfirmation: "pending",
@@ -979,6 +1010,24 @@ function validateArtifactSet({ sourceContent, analysisContent, stateContent, sou
   }
   if (state.source?.path !== "job-posting.txt" || state.source?.sha256 !== sourceSha256) {
     throw new Error("workflow-state.json source metadata does not match job-posting.txt.");
+  }
+
+  const historyBlocks = [...analysisContent.matchAll(/```history-check\n([\s\S]*?)\n```/g)];
+  if (historyBlocks.length !== 1) {
+    throw new Error("job-analysis.md must contain exactly one history-check block.");
+  }
+
+  let analysisHistory;
+  try {
+    analysisHistory = JSON.parse(historyBlocks[0][1]);
+  } catch (error) {
+    throw new Error(`job-analysis.md history-check block is invalid JSON: ${error.message}`);
+  }
+  if (
+    state.historyCheck?.version !== HISTORY_VERSION ||
+    JSON.stringify(state.historyCheck) !== JSON.stringify(analysisHistory)
+  ) {
+    throw new Error("History check must match in job-analysis.md and workflow-state.json.");
   }
 
   const outputNames = Object.values(state.outputs || {}).sort();

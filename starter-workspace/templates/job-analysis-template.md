@@ -42,6 +42,14 @@
 
 The complete cleaned posting is stored in `job-posting.txt`. Review that file during import and analysis; later phases should use the compact decisions below instead of duplicating or repeatedly loading the full posting.
 
+## Historical Application Check
+
+This pre-analysis check is read-only. It may read `application-log.md`, but it must not update the log or historical application files. If `matches` is non-empty, stop before fit, ATS, or evidence analysis and ask the user whether to stop or continue. Replace `pending` with the explicit decision before proceeding.
+
+```history-check
+{{HISTORY_CHECK_JSON}}
+```
+
 ## Job Summary
 
 TODO: Summarize the role's purpose, top hiring signals, level, and product or business context.
@@ -113,6 +121,15 @@ Use this as the single requirement, evidence, ATS, and placement matrix. Do not 
 - Human voice constraints:
 - Bullet hierarchy and rendered line budget:
 
+## Cover Letter Strategy
+
+- Unanswered hiring question:
+- Primary proof and evidence anchor:
+- Candidate-owned opening:
+- Paragraph chain: credible connection -> primary proof -> role value / close
+- Voice sample or calibration source:
+- Voice traits and contractions preference:
+
 ## Template And Layout
 
 - Resume template mode: default / custom
@@ -123,7 +140,7 @@ Use this as the single requirement, evidence, ATS, and placement matrix. Do not 
 - Contact treatment: inline one-line / compact split
 - Side padding unchanged: yes / no
 - Allowed default-template gaps: 2px, 4px
-- Layout compression order: improve bullet quality -> shorten weak or near-threshold copy -> move compact keywords -> merge or remove low-value evidence -> allowed local gap adjustment
+- Layout compression order: improve bullet quality -> compact split header when the centered header causes overflow -> shorten weak or near-threshold copy -> move compact keywords -> merge or remove low-value evidence -> allowed local gap adjustment
 - Print clipping avoided: yes / no
 
 ## User Decisions

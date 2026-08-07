@@ -40,6 +40,7 @@ For an end-to-end task, load the next phase only when reached. `README.md` is us
 
 - Resolve one active application folder from the request, import result, or explicit path.
 - Read and write only that folder by default; do not scan historical applications for context or status.
+- The read-only historical preflight may inspect `application-log.md`; inspect a prior folder only when a matching log row points to it.
 - Keep full source text in `job-posting.txt` and analysis concise.
 - Verify important state against actual artifacts.
 - Legacy folders without state or with an embedded posting remain supported; do not bulk-migrate them.
@@ -71,6 +72,14 @@ For every HTTP/HTTPS job URL:
 4. If capture is incomplete, request pasted/attached visible text and still use `--browser-text`.
 
 Do not use URL-only import. Local or pasted text may be imported directly when no URL is involved.
+
+## Historical Application Preflight
+
+Run the read-only history check before fit/ATS analysis. New imports record it automatically; for an existing folder run `npm run check-history -- "applications/{folder}"`.
+
+- No match: continue with `userDecision: not-required`.
+- Any URL, company-role, or same-company similar-role match: show the prior record and require an explicit `stop` or `continue` decision.
+- Never update the log, prior status, or historical files during this check.
 
 ## Token-Efficient Fact Routing
 
@@ -110,10 +119,13 @@ The final resume must pass ATS coverage, layout verification, PDF export, and ac
 When content overflows:
 
 1. Fix invalid or overlong bullets.
-2. Shorten near-wrap text and move compact supported terms to Skills.
-3. Merge or remove the weakest evidence.
-4. Only then use allowed application-local gap adjustments.
-5. Rerun ATS/layout after content changes and recheck PDF pages.
+2. If the default centered header materially causes overflow, apply the application-local compact split header from `templates/header-style-options.md`.
+3. Shorten near-wrap text and move compact supported terms to Skills.
+4. Merge or remove the weakest evidence.
+5. Only then use allowed application-local gap adjustments.
+6. Rerun ATS/layout after content changes and recheck PDF pages.
+
+After the page fits, inspect the exported PDF for obvious bottom-heavy imbalance. Adjust application-local top spacing only when needed, without clipping or changing the page box, then revalidate.
 
 Never reduce side padding/global font size, clip content, hide print content, fix section heights, or silently change the page target.
 
@@ -122,6 +134,7 @@ Never reduce side padding/global font size, clip content, hide print content, fi
 - Default cover letter: one A4 page, exactly three short body paragraphs, 220–300 body words.
 - Use another format only when explicitly required and pass matching renderer/layout options.
 - Choose one unanswered hiring question, use one primary proof point, and require candidate-specific details plus real judgment or work preference.
+- Link the three paragraphs as role connection -> proof -> role value/close, using a candidate-owned opening and evidence-backed voice.
 - When `$humanizer` is installed, apply `templates/humanizer-resume-guardrails.md` after the evidence draft and review its diff.
 - Preserve application-log manual edits and validate an existing hash before an authorized change.
 

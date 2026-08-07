@@ -167,6 +167,8 @@ the right, and preserves the default starter template side padding.
 
 - Apply only to a target resume inside `applications/{folder}/` unless the user
   explicitly wants to change the reusable base template.
+- Use this as an overflow fallback after bullet validation when the centered
+  header is the material source of excess height.
 - Keep phone and email as plain text unless the user asks to make them clickable.
 - Style portfolio and LinkedIn as blue underlined links.
 - Keep visible LinkedIn text readable, such as
