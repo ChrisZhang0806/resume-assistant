@@ -28,6 +28,7 @@ SOFTWARE.
 
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { scrapeJobs } from "ts-jobspy";
 
 export const SEARCH_URL =
   "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
@@ -82,6 +83,52 @@ function cleanBlock(html) {
     .replace(/ *\n */g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+function normalizeSearchText(value) {
+  return String(value ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function extractTitleTerms(query = "") {
+  return [...query.matchAll(/title\s*:\s*"([^"]+)"/gi)].map((match) =>
+    normalizeSearchText(match[1]),
+  );
+}
+
+export function matchesTitleQuery(job, query) {
+  const terms = extractTitleTerms(query);
+  if (terms.length === 0) return true;
+  const title = normalizeSearchText(job.title);
+  return terms.some((term) => title.includes(term));
+}
+
+export function normalizeLocation(value) {
+  const aliases = new Map([
+    ["ab", "alberta"],
+    ["bc", "british columbia"],
+    ["mb", "manitoba"],
+    ["nb", "new brunswick"],
+    ["nl", "newfoundland and labrador"],
+    ["ns", "nova scotia"],
+    ["nt", "northwest territories"],
+    ["nu", "nunavut"],
+    ["on", "ontario"],
+    ["pe", "prince edward island"],
+    ["pei", "prince edward island"],
+    ["qc", "quebec"],
+    ["sk", "saskatchewan"],
+    ["yt", "yukon"],
+    ["ca", "canada"],
+  ]);
+  return normalizeSearchText(value)
+    .split(" ")
+    .map((part) => aliases.get(part) ?? part)
+    .join(" ");
 }
 
 export function extractDivContent(html, className) {
@@ -141,6 +188,7 @@ export function parseJobCards(html) {
 
     results.push({
       id,
+      source: "linkedin",
       title: cleanInline(titleHtml),
       company: companyHtml ? cleanInline(companyHtml) || null : null,
       companyUrl: companyLink
@@ -185,6 +233,7 @@ export function parseJobDetail(html, id) {
 
   return {
     id,
+    source: "linkedin",
     title: titleHtml ? cleanInline(titleHtml) : "(untitled)",
     company: organization ? cleanInline(organization[2]) || null : null,
     companyUrl: organization
@@ -216,6 +265,82 @@ export function buildSearchUrl(options) {
   if (workType) params.set("f_WT", workType);
   params.set("start", String((options.page - 1) * 10));
   return `${SEARCH_URL}?${params.toString()}`;
+}
+
+export function buildIndeedOptions(options) {
+  return {
+    siteName: "indeed",
+    searchTerm: options.query,
+    location: options.location,
+    countryIndeed: "Canada",
+    resultsWanted: options.limit,
+    offset: (options.page - 1) * 10,
+    hoursOld: options.jobage > 0 ? options.jobage * 24 : undefined,
+    isRemote: options.remote === "remote",
+    descriptionFormat: "markdown",
+    verbose: 0,
+  };
+}
+
+export function normalizeIndeedJob(job) {
+  return {
+    id: job.id ?? job.jobUrl,
+    source: "indeed",
+    title: job.title ?? "(untitled)",
+    company: job.company ?? null,
+    companyUrl: job.companyUrl ?? null,
+    location: job.location ?? null,
+    date: job.datePosted ?? null,
+    url: job.jobUrl,
+    applyUrl: job.jobUrlDirect ?? null,
+    description: job.description ?? null,
+    employmentType: job.jobType ?? null,
+    isRemote: job.isRemote ?? null,
+  };
+}
+
+export function matchesWorkMode(job, workMode) {
+  if (!workMode) return true;
+  const text = `${job.location ?? ""}\n${job.description ?? ""}`.toLowerCase();
+  if (workMode === "remote") return job.isRemote === true;
+  if (workMode === "hybrid") return /\bhybrid\b/.test(text);
+  // ponytail: Indeed has no exact onsite/hybrid field; replace this heuristic if it adds one.
+  return job.isRemote !== true && !/\bhybrid\b/.test(text);
+}
+
+export function matchesRecency(date, days, now = new Date()) {
+  if (days === 0 || !date) return true;
+  const posted = Date.parse(`${date}T00:00:00Z`);
+  const today = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  return Number.isFinite(posted) && posted >= today - days * 86_400_000;
+}
+
+export function mergeJobLists(jobLists, limit) {
+  const merged = [];
+  const seen = new Set();
+  const length = Math.max(0, ...jobLists.map((jobs) => jobs.length));
+
+  for (let index = 0; index < length && merged.length < limit; index += 1) {
+    for (const jobs of jobLists) {
+      const job = jobs[index];
+      if (!job) continue;
+      const key = [
+        normalizeSearchText(job.title),
+        normalizeSearchText(job.company),
+        normalizeLocation(job.location),
+      ].join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(job);
+      if (merged.length === limit) break;
+    }
+  }
+
+  return merged;
 }
 
 async function fetchHtml(url) {
@@ -374,8 +499,9 @@ function normalizeJobId(value) {
 
 function renderTable(jobs) {
   if (jobs.length === 0) return "No results.";
-  const header = ["ID", "TITLE", "COMPANY", "LOCATION", "DATE"];
+  const header = ["SOURCE", "ID", "TITLE", "COMPANY", "LOCATION", "DATE"];
   const rows = jobs.map((job) => [
+    job.source,
     job.id,
     job.title,
     job.company ?? "-",
@@ -401,10 +527,50 @@ function renderTable(jobs) {
 }
 
 async function runSearch(options) {
-  const jobs = parseJobCards(await fetchHtml(buildSearchUrl(options))).slice(
-    0,
-    options.limit,
+  const [linkedinResult, indeedResult] = await Promise.allSettled([
+    fetchHtml(buildSearchUrl(options)).then((html) =>
+      parseJobCards(html)
+        .filter((job) => matchesTitleQuery(job, options.query))
+        .slice(0, options.limit),
+    ),
+    scrapeJobs(buildIndeedOptions(options)).then((jobs) =>
+      jobs
+        .map(normalizeIndeedJob)
+        .filter((job) => matchesRecency(job.date, options.jobage))
+        .filter((job) => matchesWorkMode(job, options.remote))
+        .filter((job) => matchesTitleQuery(job, options.query))
+        .slice(0, options.limit),
+    ),
+  ]);
+  const sourceErrors = [
+    ["linkedin", linkedinResult],
+    ["indeed", indeedResult],
+  ]
+    .filter(([, result]) => result.status === "rejected")
+    .map(([source, result]) => ({
+      source,
+      error:
+        result.reason instanceof Error
+          ? result.reason.message
+          : String(result.reason),
+    }));
+  if (sourceErrors.length === 2) {
+    throw Object.assign(new Error("LinkedIn and Indeed searches both failed"), {
+      code: "SOURCE_FAILED",
+    });
+  }
+  const linkedinJobs =
+    linkedinResult.status === "fulfilled" ? linkedinResult.value : [];
+  const indeedJobs = indeedResult.status === "fulfilled" ? indeedResult.value : [];
+  const jobs = mergeJobLists([indeedJobs, linkedinJobs], options.limit);
+  const saturated = options.limit > 0 && jobs.length === options.limit;
+  const bySource = Object.fromEntries(
+    ["linkedin", "indeed"].map((source) => [
+      source,
+      jobs.filter((job) => job.source === source).length,
+    ]),
   );
+
   if (options.format === "table") {
     process.stdout.write(`${renderTable(jobs)}\n`);
   } else if (options.format === "plain") {
@@ -412,18 +578,47 @@ async function runSearch(options) {
       `${jobs
         .map(
           (job) =>
-            `${job.title}\n${job.company ?? "-"} | ${job.location ?? "-"} | ${job.date ?? "-"}\n${job.url}`,
+            `[${job.source}] ${job.title}\n${job.company ?? "-"} | ${job.location ?? "-"} | ${job.date ?? "-"}\n${job.url}`,
         )
         .join("\n\n")}\n`,
     );
   } else {
     process.stdout.write(
       `${JSON.stringify(
-        { meta: { count: jobs.length, page: options.page }, results: jobs },
+        {
+          meta: {
+            count: jobs.length,
+            page: options.page,
+            bySource,
+            saturated,
+            verificationRequired: [
+              "applicationStatus",
+              "employmentType",
+              ...(options.remote ? ["workMode"] : []),
+            ],
+            ...(sourceErrors.length > 0 ? { warnings: sourceErrors } : {}),
+          },
+          results: jobs,
+        },
         null,
         2,
       )}\n`,
     );
+  }
+  if (options.format !== "json") {
+    if (saturated) {
+      process.stderr.write(
+        `${JSON.stringify({ warning: "Query reached the result limit; split it before concluding coverage", code: "QUERY_SATURATED" })}\n`,
+      );
+    }
+    if (options.remote) {
+      process.stderr.write(
+        `${JSON.stringify({ warning: "Work mode and employment type require full-posting verification", code: "METADATA_UNVERIFIED" })}\n`,
+      );
+    }
+    for (const warning of sourceErrors) {
+      writeError(`${warning.source}: ${warning.error}`, "SOURCE_FAILED");
+    }
   }
 }
 
@@ -462,19 +657,19 @@ async function runDetail(options) {
   }
 }
 
-const HELP = `Search LinkedIn public job listings (personal, low-volume use only).
+const HELP = `Search LinkedIn and Indeed Canada job listings (personal, low-volume use only).
 
 Usage:
   npm run search-jobs -- search -q "<role>" -l "<location>" [options]
-  npm run search-jobs -- detail <id|url> [--format json|plain]
+  npm run search-jobs -- detail <linkedin-id|url> [--format json|plain]
 
 Search options:
-  --query, -q       Role or keywords
-  --location, -l    Required LinkedIn location string
+  --query, -q       Role or keywords; title:"..." terms are post-filtered by title
+  --location, -l    Required location string
   --jobage          Posted within 0-365 days
-  --remote          remote | hybrid | onsite
-  --page            Page number, 1-100
-  --limit, -n       Result limit, 0-10
+  --remote          remote | hybrid | onsite (Indeed uses a text heuristic)
+  --page            Page number per source, 1-100
+  --limit, -n       Merged result limit, 0-10
   --format          json | table | plain
 `;
 
